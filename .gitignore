@@ -1,0 +1,9 @@
+.env
+__pycache__/
+.DS_Store
+experiments.ipynb
+AGENTS.md
+CLAUDE.md
+.venv
+knowledge/
+outputs/

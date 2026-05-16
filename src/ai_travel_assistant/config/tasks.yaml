@@ -1,0 +1,136 @@
+destination_analysis:
+  description: >
+    Analyze ALL of the following destinations for this trip. The traveler intends to visit every destination listed — do NOT select or eliminate any. Provide a comprehensive analysis for each one.
+
+    **For each destination, cover:**
+    1. **Weather Analysis**: Current conditions and forecast for the travel dates
+    2. **Cost Analysis**: Flight prices from origin, accommodation costs, overall budget fit (all costs in {currency})
+    3. **Activities & Attractions**: Alignment with traveler interests and available activities
+    4. **Seasonal Considerations**: Events, festivals, peak/off-season factors
+    5. **Safety & Logistics**: Travel advisories, ease of travel, inter-destination transport
+
+    **Day Distribution Decision:**
+    After analysing each destination, recommend how many days to allocate to each one across the total {duration}.
+    Use the following principles to guide the split:
+    - "relax" style: favour depth over breadth — give more days to fewer destinations, minimise travel days
+    - "adventure" style: pack in more stops, accept shorter stays, optimise for variety
+    - "business" style: anchor days around business commitments first, fill remaining time with high-efficiency sightseeing
+    - Always account for at least half a day of travel/transit between destinations
+    - Weight allocation towards destinations with more activities matching {interests}
+    - Output the decision as a clear table: Destination | Days Allocated | Reasoning
+
+    **Travel Details:**
+    - Origin: {origin}
+    - Destinations (all to be visited): {destinations}
+    - Travel Dates: {start_date} to {end_date} ({duration})
+    - Budget Range: {budget}
+    - Group Size: {group_size} people
+    - Interests: {interests}
+    - Travel Style: {travel_style}
+    - Currency: {currency}
+
+    Provide specific, actionable information with current data for every destination listed.
+  expected_output: >
+    Per-destination analysis covering weather, costs in {currency}, activities, seasonal tips, and logistics — followed by a day-distribution table (Destination | Days Allocated | Reasoning) that downstream agents must follow
+  agent: travel_researcher
+
+local_expert_insights:
+  description: >
+    Based on the destination analysis and the day-distribution table produced by the travel researcher, provide
+    local expertise for EVERY destination. Scale the depth of your recommendations proportionally to the days
+    allocated to each destination — a destination with more days allocated gets more recommendations.
+
+    **For each destination provide:**
+    1. **Hidden Gems**: Off-the-beaten-path locations and experiences locals recommend.
+    2. **Cultural Intelligence**: Local customs, etiquette, cultural norms, and social tips.
+    3. **Authentic Dining**: Local restaurants, street food, traditional dishes to try.
+    4. **Insider Tips**: Best times to visit attractions, how to avoid crowds, local secrets.
+    5. **Practical Advice**: Transportation tips, local apps, shopping areas, safety considerations.
+
+    Organise your output by destination in the same order as the day-distribution table.
+
+    **Context:**
+    - Destinations (all to be visited): {destinations}
+    - Travel Dates: {start_date} to {end_date}
+    - Traveler Interests: {interests}
+    - Travel Style: {travel_style}
+    - Group Size: {group_size} people
+    - Currency: {currency}
+  expected_output: >
+    Per-destination local expert guide, ordered to match the day-distribution table, with recommendations scaled to days allocated per destination
+  agent: local_guide
+
+full_itinerary:
+  description: >
+    Create a detailed, day-by-day travel itinerary incorporating all previous research and local insights.
+
+    **Itinerary Components:**
+
+    **Daily Schedule ({duration}):**
+    - Structure the days using the day-distribution table from the destination analysis. Each destination block
+      must span exactly the number of days allocated to it. Include a clearly labelled transit day (or half-day)
+      whenever moving between destinations.
+    - Morning, afternoon, and evening activities for each day.
+    - Specific venues, attractions, and experiences with names and locations.
+    - Realistic timing and logistics between activities.
+    - Balance of activities with rest time appropriate to the "{travel_style}" travel style.
+
+    **Accommodation Plan:**
+    - Specific hotel/accommodation recommendations with names and locations.
+    - Reasoning for each choice (location, amenities, value, style match).
+    - Price estimates and booking considerations.
+
+    **Dining Recommendations:**
+    - Restaurant suggestions for breakfast, lunch, and dinner each day.
+    - Mix of local cuisine and international options.
+    - Specific dishes to try and estimated meal costs.
+
+    **Transportation & Logistics:**
+    - Airport transfers and local transportation options.
+    - Getting between activities and attractions.
+    - Transportation costs and practical tips.
+
+    **Budget Breakdown:**
+    - Accommodation costs (per night and total).
+    - Transportation (flights, local transport).
+    - Food and dining (daily estimates).
+    - Activities and attractions (entrance fees, tours).
+    - Miscellaneous expenses and shopping.
+    - **TOTAL ESTIMATED TRIP COST**
+
+    **Practical Information:**
+    - Weather-appropriate packing suggestions.
+    - Important contacts and emergency information.
+    - Cultural considerations and etiquette reminders.
+
+    **Travel Context:**
+    - Origin: {origin}
+    - Destinations (all to be visited): {destinations}
+    - Travel Dates: {start_date} to {end_date} ({duration})
+    - Budget Range: {budget}
+    - Interests: {interests}
+    - Group Size: {group_size} people
+    - Currency: {currency}
+
+    All cost estimates must be stated in {currency}.
+  expected_output: >
+    Complete day-by-day travel itinerary in markdown format with accommodations, dining, activities, transportation, and detailed budget breakdown
+  agent: itinerary_writer
+
+# research_task:
+#   description: >
+#     Conduct a thorough research about {topic}
+#     Make sure you find any interesting and relevant information given
+#     the current year is {current_year}.
+#   expected_output: >
+#     A list with 10 bullet points of the most relevant information about {topic}
+#   agent: researcher
+
+# reporting_task:
+#   description: >
+#     Review the context you got and expand each topic into a full section for a report.
+#     Make sure the report is detailed and contains any and all relevant information.
+#   expected_output: >
+#     A fully fledged report with the main topics, each with a full section of information.
+#     Formatted as markdown without '```'
+#   agent: reporting_analyst
