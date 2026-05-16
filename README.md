@@ -183,7 +183,8 @@ Add the corresponding API key to `.env` for whichever provider you choose.
 
 
 ### Future Work
-1. Deployment and Docker Containerization
-2. Include advanced Reasoning, Planning, Collaboration and State Memory into
-   agents for more complex and detailed itinerary planning
-3. Set up knowledge base of flight prices and details for improved planning
+1. Set up knowledge base of flight prices and details for improved planning
+2. Include advanced Reasoning, Planning, Collaboration and State Memory into agents for more complex and detailed itinerary planning
+3. Infrastructure & Deployment using Docker Containerization, observability and evaluation
+
+
