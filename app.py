@@ -61,7 +61,7 @@ if "error" not in st.session_state:
 st.title("✈️ AI Travel Assistant")
 st.caption(
     "Three AI agents collaborate to research your destinations, gather local insights, "
-    "and build a day-by-day itinerary — with smart day distribution based on your travel style."
+    "and build a day-by-day itinerary, with smart day distribution based on your travel style."
 )
 st.divider()
 
@@ -137,7 +137,9 @@ with st.form("trip_form"):
         default=["Food & dining", "Local culture", "Sightseeing & landmarks"],
     )
 
-    submitted = st.form_submit_button("🗺️ Plan My Trip", use_container_width=True, type="primary")
+    submitted = st.form_submit_button(
+        "🗺️ Plan My Trip", use_container_width=True, type="primary"
+    )
 
 
 # ── Validation & execution ────────────────────────────────────────────────────
@@ -148,7 +150,7 @@ if submitted:
 
     destinations = parse_destinations(destinations_raw)
 
-    # Client-side validation
+    # Client side validation
     errors = []
     if not origin.strip():
         errors.append("Origin is required.")
@@ -179,10 +181,12 @@ if submitted:
         st.info(
             f"Planning a **{duration_days}-day {travel_style}** trip for **{group_size}** "
             f"from **{origin}** to **{', '.join(destinations)}** ({currency}). "
-            f"This takes a few minutes — agents are working…"
+            f"This takes a few minutes while agents are working…"
         )
 
-        with st.spinner("Agents are researching, gathering local insights, and writing your itinerary…"):
+        with st.spinner(
+            "Agents are researching, gathering local insights, and writing your itinerary…"
+        ):
             try:
                 insights, itinerary = run_crew(request)
                 st.session_state.insights = insights

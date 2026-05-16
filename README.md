@@ -1,6 +1,6 @@
 # AI Travel Assistant
 
-A multi-agent AI travel planner built with [crewAI](https://crewai.com). Given a trip request, three specialised agents collaborate sequentially to research every destination, gather local insider knowledge, and produce a complete day-by-day itinerary — including an agent-decided day distribution across destinations based on your travel style.
+A multi-agent AI travel planner built with [crewAI](https://crewai.com). Given a trip request, three specialised agents collaborate sequentially to research every destination, gather local insider knowledge, and produce a complete day-by-day itinerary across destinations based on your travel style.
 
 ## Architecture
 
@@ -47,7 +47,7 @@ The Travel Researcher decides how to split the trip duration across multiple des
 
 | Travel Style | Behaviour |
 |---|---|
-| `relax` | Depth over breadth — more days per destination, fewer moves |
+| `relax` | Depth over breadth: more days per destination, fewer moves |
 | `adventure` | More stops, shorter stays, optimised for variety |
 | `business` | Anchors around business commitments first, fills gaps with sightseeing |
 
@@ -55,7 +55,7 @@ Transit time between destinations is always accounted for (minimum half a day).
 
 ### Input Model
 
-Defined as `TravelRequest` (Pydantic) in `src/ai_travel_assistant/crew.py`:
+Defined as `TravelRequest` in `src/ai_travel_assistant/crew.py`:
 
 | Field | Type | Description | Example |
 |---|---|---|---|
@@ -100,7 +100,7 @@ crewai install        # installs all dependencies via uv
 Copy `.env.example` to `.env` (or create `.env`) and fill in the required keys:
 
 ```bash
-# LLM provider — project uses Groq by default
+# LLM provider: project uses Groq by default
 GROQ_API_KEY=your_groq_api_key
 
 # Web search tool used by Travel Researcher and Local Guide
