@@ -1,4 +1,4 @@
-# AI Travel Assistant
+# AI Travel Itinerary Planner Assistant
 
 A multi-agent AI travel planner built with [crewAI](https://crewai.com). Given a trip request, three specialised agents collaborate sequentially to research every destination, gather local insider knowledge, and produce a complete day-by-day itinerary across destinations based on your travel style.
 
@@ -29,13 +29,13 @@ TravelRequest
 │                     │  • Scales depth of recommendations to days allocated
 │                     │  → outputs/recommended_insights.md
 └────────┬────────────┘
-         │ context (both tasks above)
+         │ context (both agents above)
          ▼
 ┌─────────────────────┐
 │  Itinerary Writer   │
 │                     │
 │                     │  • Builds day-by-day schedule in destination blocks
-│                     │  • Honours the day-distribution table from Task 1
+│                     │  • Honours the day-distribution table from Travel Researcher
 │                     │  • Labels transit days between destinations explicitly
 │                     │  → outputs/suggested_itinerary.md
 └─────────────────────┘
@@ -53,7 +53,7 @@ The Travel Researcher decides how to split the trip duration across multiple des
 
 Transit time between destinations is always accounted for (minimum half a day).
 
-### Input Model
+### Input Data
 
 Defined as `TravelRequest` in `src/ai_travel_assistant/crew.py`:
 
@@ -180,3 +180,10 @@ Add the corresponding API key to `.env` for whichever provider you choose.
 | `src/ai_travel_assistant/config/agents.yaml` | Agent role, goal, backstory, and LLM model |
 | `src/ai_travel_assistant/config/tasks.yaml` | Task instructions and expected outputs |
 | `src/ai_travel_assistant/crew.py` | Tools assigned to each agent, task context wiring |
+
+
+### Future Work
+1. Deployment and Docker Containerization
+2. Include advanced Reasoning, Planning, Collaboration and State Memory into
+   agents for more complex and detailed itinerary planning
+3. Set up knowledge base of flight prices and details for improved planning
