@@ -109,6 +109,7 @@ class AiTravelAssistant:
         return Agent(
             config=self.agents_config["travel_consultant"],  # type: ignore[index]
             verbose=True,
+            tools=[SerperDevTool()],
         )
 
     # To learn more about structured task outputs,

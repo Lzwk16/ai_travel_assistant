@@ -13,8 +13,8 @@ TravelRequest
       │
       ▼
 ┌─────────────────────┐
-│  Travel Researcher  │  SerperDevTool (web search)
-│  travel_expert      │
+│  Travel Researcher  │  Web search via SerperDevTool
+│                     │
 │                     │  • Analyses every destination (weather, cost, activities)
 │                     │  • Decides how to split days across destinations
 │                     │    based on travel style and interests
@@ -23,8 +23,8 @@ TravelRequest
          │ context
          ▼
 ┌─────────────────────┐
-│    Local Guide      │  SerperDevTool (web search)
-│    local_expert     │
+│    Local Guide      │  Web search via SerperDevTool
+│                     │
 │                     │  • Provides insider knowledge for every destination
 │                     │  • Scales depth of recommendations to days allocated
 │                     │  → outputs/recommended_insights.md
@@ -33,7 +33,7 @@ TravelRequest
          ▼
 ┌─────────────────────┐
 │  Itinerary Writer   │
-│  travel_consultant  │
+│                     │
 │                     │  • Builds day-by-day schedule in destination blocks
 │                     │  • Honours the day-distribution table from Task 1
 │                     │  • Labels transit days between destinations explicitly
@@ -113,9 +113,21 @@ Get your keys:
 
 ### 3. Run
 
+**Streamlit UI (recommended)**
+
+```bash
+uv run streamlit run app.py
+```
+
+Opens at `http://localhost:8501`. Fill in the form and click **Plan My Trip**.
+
+**CLI**
+
 ```bash
 crewai run
 ```
+
+Edit `_SAMPLE_REQUEST` in `main.py` to change the trip inputs.
 
 Outputs are written to `outputs/recommended_insights.md` and `outputs/suggested_itinerary.md`.
 
