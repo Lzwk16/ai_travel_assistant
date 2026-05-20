@@ -97,17 +97,18 @@ crewai install        # installs all dependencies via uv
 
 ### 2. Configure environment variables
 
-Copy `.env.example` to `.env` (or create `.env`) and fill in the required keys:
+Create a `.env` and fill in the required keys:
 
 ```bash
 # LLM provider: project uses Groq by default
+# You may use other proprietary model providers as needed
 GROQ_API_KEY=your_groq_api_key
 
 # Web search tool used by Travel Researcher and Local Guide
 SERPER_API_KEY=your_serper_api_key
 ```
 
-Get your keys:
+Get your Groq and Serper API keys here:
 - **Groq**: [console.groq.com](https://console.groq.com) (free tier available)
 - **Serper**: [serper.dev](https://serper.dev) (free tier: 2,500 searches)
 
