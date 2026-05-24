@@ -117,21 +117,21 @@ full_itinerary:
     Complete day-by-day travel itinerary in markdown format with accommodations, dining, activities, transportation, and detailed budget breakdown
   agent: itinerary_writer
 
-flight_research:
-  description: >
-    Find the best flights to {destination} from {origin} on {start_date}. The {end_date} is optional, if provided, include that in the flight search.
-    The flight should be the cheapest one.
-  expected_output: >
-    A list of 5 flights with the following MUST information:
-    - Flight Number
-    - Flight Date
-    - Departure Time
-    - Arrival Time
-    - Price/Fare (in {currency})
-    - Airlines (Airline Name)
-    - Departure Airport (Airport Name)
-    - Arrival Airport (Airport Name)
-  agent: flight_agent
+# flight_research:
+#   description: >
+#     Find the best flights to {destination} from {origin} on {start_date}. The {end_date} is optional, if provided, include that in the flight search.
+#     The flight should be the cheapest one.
+#   expected_output: >
+#     A list of 5 flights with the following MUST information:
+#     - Flight Number
+#     - Flight Date
+#     - Departure Time
+#     - Arrival Time
+#     - Price/Fare (in {currency})
+#     - Airlines (Airline Name)
+#     - Departure Airport (Airport Name)
+#     - Arrival Airport (Airport Name)
+#   agent: flight_agent
 
 # research_task:
 #   description: >

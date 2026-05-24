@@ -13,6 +13,12 @@ from pydantic import BaseModel, Field
 # https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
 
 
+llm = "groq/llama-3.3-70b-versatile"
+researcher_settings = LLM(model=llm, temperature=0.1)  # factual, structured table
+writer_settings = LLM(model=llm, temperature=0.2)  # structured day-by-day
+guide_settings = LLM(model=llm, temperature=0.4)  # creative recommendations
+
+
 class TravelRequest(BaseModel):
     origin: str = Field(
         description="The Starting country or city", examples=["Singapore"]
@@ -93,7 +99,8 @@ class AiTravelAssistant:
     @agent
     def travel_researcher(self) -> Agent:
         return Agent(
-            config=self.agents_config["travel_expert"],  # type: ignore[index]
+            config=self.agents_config["travel_expert"],
+            llm=researcher_settings,
             tools=[SerperDevTool()],
             verbose=True,
         )
@@ -101,7 +108,8 @@ class AiTravelAssistant:
     @agent
     def local_guide(self) -> Agent:
         return Agent(
-            config=self.agents_config["local_expert"],  # type: ignore[index]
+            config=self.agents_config["local_expert"],
+            llm=guide_settings,
             tools=[SerperDevTool()],
             verbose=True,
         )
@@ -109,7 +117,8 @@ class AiTravelAssistant:
     @agent
     def itinerary_writer(self) -> Agent:
         return Agent(
-            config=self.agents_config["travel_consultant"],  # type: ignore[index]
+            config=self.agents_config["travel_consultant"],
+            llm=writer_settings,
             verbose=True,
             tools=[SerperDevTool()],
         )
