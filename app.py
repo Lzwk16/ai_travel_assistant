@@ -25,6 +25,7 @@ INTERESTS_OPTIONS = [
     "History",
 ]
 
+OUTPUT_FLIGHTS = "outputs/flight_options.md"
 OUTPUT_INSIGHTS = "outputs/recommended_insights.md"
 OUTPUT_ITINERARY = "outputs/suggested_itinerary.md"
 
@@ -41,14 +42,16 @@ def read_output(path: str) -> str | None:
     return None
 
 
-def run_crew(request: TravelRequest) -> tuple[str | None, str | None]:
-    """Run the crew and return (insights_md, itinerary_md)."""
+def run_crew(request: TravelRequest) -> tuple[str | None, str | None, str | None]:
+    """Run the crew and return (flights_md, insights_md, itinerary_md)."""
     os.makedirs("outputs", exist_ok=True)
     AiTravelAssistant().crew().kickoff(inputs=request.to_crew_inputs())
-    return read_output(OUTPUT_INSIGHTS), read_output(OUTPUT_ITINERARY)
+    return read_output(OUTPUT_FLIGHTS), read_output(OUTPUT_INSIGHTS), read_output(OUTPUT_ITINERARY)
 
 
 # ── Session state init ────────────────────────────────────────────────────────
+if "flights" not in st.session_state:
+    st.session_state.flights = None
 if "insights" not in st.session_state:
     st.session_state.insights = None
 if "itinerary" not in st.session_state:
@@ -60,7 +63,7 @@ if "error" not in st.session_state:
 # ── Header ────────────────────────────────────────────────────────────────────
 st.title("✈️ AI Travel Assistant")
 st.caption(
-    "Three AI agents collaborate to research your destinations, gather local insights, "
+    "Four AI agents collaborate to find flights, research your destinations, gather local insights, "
     "and build a day-by-day itinerary, with smart day distribution based on your travel style."
 )
 st.divider()
@@ -144,6 +147,7 @@ with st.form("trip_form"):
 
 # ── Validation & execution ────────────────────────────────────────────────────
 if submitted:
+    st.session_state.flights = None
     st.session_state.insights = None
     st.session_state.itinerary = None
     st.session_state.error = None
@@ -185,10 +189,11 @@ if submitted:
         )
 
         with st.spinner(
-            "Agents are researching, gathering local insights, and writing your itinerary…"
+            "Agents are searching flights, researching destinations, gathering local insights, and writing your itinerary…"
         ):
             try:
-                insights, itinerary = run_crew(request)
+                flights, insights, itinerary = run_crew(request)
+                st.session_state.flights = flights
                 st.session_state.insights = insights
                 st.session_state.itinerary = itinerary
                 st.success("Done! Your travel plan is ready.")
@@ -202,11 +207,25 @@ if st.session_state.error:
 
 
 # ── Results ───────────────────────────────────────────────────────────────────
-if st.session_state.insights or st.session_state.itinerary:
+if st.session_state.flights or st.session_state.insights or st.session_state.itinerary:
     st.divider()
     st.subheader("Your Travel Plan")
 
-    tab_itinerary, tab_insights = st.tabs(["📅 Full Itinerary", "📍 Local Insights"])
+    tab_flights, tab_itinerary, tab_insights = st.tabs(
+        ["✈️ Flight Options", "📅 Full Itinerary", "📍 Local Insights"]
+    )
+
+    with tab_flights:
+        if st.session_state.flights:
+            st.markdown(st.session_state.flights)
+            st.download_button(
+                label="Download Flight Options",
+                data=st.session_state.flights,
+                file_name="flight_options.md",
+                mime="text/markdown",
+            )
+        else:
+            st.warning("Flight options output not found.")
 
     with tab_itinerary:
         if st.session_state.itinerary:

@@ -1,6 +1,6 @@
 import os
 
-from crewai import Agent, Crew, Process, Task, LLM
+from crewai import Agent, Crew, LLM, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai_tools import SerperDevTool
@@ -11,6 +11,12 @@ from pydantic import BaseModel, Field
 # If you want to run a snippet of code before or after the crew starts,
 # you can use the @before_kickoff and @after_kickoff decorators
 # https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
+
+_MODEL = "groq/llama-3.3-70b-versatile"
+_LLM_RESEARCHER = LLM(model=_MODEL, temperature=0.1)   # factual, structured table
+_LLM_WRITER = LLM(model=_MODEL, temperature=0.2)       # structured day-by-day
+_LLM_GUIDE = LLM(model=_MODEL, temperature=0.4)        # creative recommendations
+_LLM_FLIGHTS = LLM(model=_MODEL, temperature=0.1)      # factual flight data
 
 
 class TravelRequest(BaseModel):
@@ -91,9 +97,19 @@ class AiTravelAssistant:
     # If you would like to add tools to your agents, you can learn more about it here:
     # https://docs.crewai.com/concepts/agents#agent-tools
     @agent
+    def flight_agent(self) -> Agent:
+        return Agent(
+            config=self.agents_config["flight_expert"],  # type: ignore[index]
+            llm=_LLM_FLIGHTS,
+            tools=[SerperDevTool()],
+            verbose=True,
+        )
+
+    @agent
     def travel_researcher(self) -> Agent:
         return Agent(
             config=self.agents_config["travel_expert"],  # type: ignore[index]
+            llm=_LLM_RESEARCHER,
             tools=[SerperDevTool()],
             verbose=True,
         )
@@ -102,6 +118,7 @@ class AiTravelAssistant:
     def local_guide(self) -> Agent:
         return Agent(
             config=self.agents_config["local_expert"],  # type: ignore[index]
+            llm=_LLM_GUIDE,
             tools=[SerperDevTool()],
             verbose=True,
         )
@@ -110,6 +127,7 @@ class AiTravelAssistant:
     def itinerary_writer(self) -> Agent:
         return Agent(
             config=self.agents_config["travel_consultant"],  # type: ignore[index]
+            llm=_LLM_WRITER,
             verbose=True,
             tools=[SerperDevTool()],
         )
@@ -118,9 +136,17 @@ class AiTravelAssistant:
     # task dependencies, and task callbacks, check out the documentation:
     # https://docs.crewai.com/concepts/tasks#overview-of-a-task
     @task
+    def find_flights(self) -> Task:
+        return Task(
+            config=self.tasks_config["flight_research"],  # type: ignore[index]
+            output_file="outputs/flight_options.md",
+        )
+
+    @task
     def research_destinations(self) -> Task:
         return Task(
             config=self.tasks_config["destination_analysis"],  # type: ignore[index]
+            context=[self.find_flights()],
         )
 
     @task
@@ -135,7 +161,7 @@ class AiTravelAssistant:
     def itinerary_guide(self) -> Task:
         return Task(
             config=self.tasks_config["full_itinerary"],  # type: ignore[index]
-            context=[self.research_destinations(), self.local_insights()],
+            context=[self.find_flights(), self.research_destinations(), self.local_insights()],
             output_file="outputs/suggested_itinerary.md",
         )
 
