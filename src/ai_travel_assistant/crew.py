@@ -12,11 +12,11 @@ from pydantic import BaseModel, Field
 # you can use the @before_kickoff and @after_kickoff decorators
 # https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
 
-_MODEL = "groq/llama-3.3-70b-versatile"
-_LLM_RESEARCHER = LLM(model=_MODEL, temperature=0.1)   # factual, structured table
-_LLM_WRITER = LLM(model=_MODEL, temperature=0.2)       # structured day-by-day
-_LLM_GUIDE = LLM(model=_MODEL, temperature=0.4)        # creative recommendations
-_LLM_FLIGHTS = LLM(model=_MODEL, temperature=0.1)      # factual flight data
+llm = "groq/llama-3.3-70b-versatile"
+researcher_settings = LLM(model=llm, temperature=0.1)  # factual, structured table
+writer_settings = LLM(model=llm, temperature=0.2)  # structured day-by-day
+guide_settings = LLM(model=llm, temperature=0.4)  # creative recommendations
+flight_settings = LLM(model=llm, temperature=0.1)  # factual flight data
 
 
 class TravelRequest(BaseModel):
@@ -100,7 +100,7 @@ class AiTravelAssistant:
     def flight_agent(self) -> Agent:
         return Agent(
             config=self.agents_config["flight_expert"],  # type: ignore[index]
-            llm=_LLM_FLIGHTS,
+            llm=flight_settings,
             tools=[SerperDevTool()],
             verbose=True,
         )
@@ -109,7 +109,7 @@ class AiTravelAssistant:
     def travel_researcher(self) -> Agent:
         return Agent(
             config=self.agents_config["travel_expert"],  # type: ignore[index]
-            llm=_LLM_RESEARCHER,
+            llm=researcher_settings,
             tools=[SerperDevTool()],
             verbose=True,
         )
@@ -118,7 +118,7 @@ class AiTravelAssistant:
     def local_guide(self) -> Agent:
         return Agent(
             config=self.agents_config["local_expert"],  # type: ignore[index]
-            llm=_LLM_GUIDE,
+            llm=guide_settings,
             tools=[SerperDevTool()],
             verbose=True,
         )
@@ -127,7 +127,7 @@ class AiTravelAssistant:
     def itinerary_writer(self) -> Agent:
         return Agent(
             config=self.agents_config["travel_consultant"],  # type: ignore[index]
-            llm=_LLM_WRITER,
+            llm=writer_settings,
             verbose=True,
             tools=[SerperDevTool()],
         )
@@ -161,7 +161,11 @@ class AiTravelAssistant:
     def itinerary_guide(self) -> Task:
         return Task(
             config=self.tasks_config["full_itinerary"],  # type: ignore[index]
-            context=[self.find_flights(), self.research_destinations(), self.local_insights()],
+            context=[
+                self.find_flights(),
+                self.research_destinations(),
+                self.local_insights(),
+            ],
             output_file="outputs/suggested_itinerary.md",
         )
 
