@@ -12,8 +12,6 @@ from pydantic import BaseModel, Field
 # you can use the @before_kickoff and @after_kickoff decorators
 # https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
 
-model = LLM()
-
 
 class TravelRequest(BaseModel):
     origin: str = Field(
