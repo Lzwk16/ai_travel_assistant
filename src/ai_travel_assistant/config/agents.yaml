@@ -51,7 +51,9 @@ flight_expert:
     across destinations globally. You excel at comparing flights based on ticket prices,
     flight times, availability and connecting airports. You provide data-driven
     recommendations with clear reasoning.
-  llm: groq/llama-3.3-70b-versatile
+  llm:
+    model: groq/llama-3.3-70b-versatile
+    temperature: 0.1
 
 # researcher:
 #   role: >
