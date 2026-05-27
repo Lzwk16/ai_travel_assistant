@@ -162,7 +162,7 @@ class AiTravelAssistant:
         return Task(
             config=self.tasks_config["full_itinerary"],  # type: ignore[index]
             context=[
-                self.find_flights(),
+                # self.find_flights(),
                 self.research_destinations(),
                 self.local_insights(),
             ],
@@ -180,5 +180,6 @@ class AiTravelAssistant:
             tasks=self.tasks,  # Automatically created by the @task decorator
             process=Process.sequential,
             verbose=True,
+            max_rpm=5,  # ~5 calls/min keeps token usage under Groq's 12K TPM free tier limit
             # process=Process.hierarchical, # In case you wanna use that instead https://docs.crewai.com/how-to/Hierarchical/
         )
