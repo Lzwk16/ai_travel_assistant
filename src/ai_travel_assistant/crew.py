@@ -1,5 +1,3 @@
-import os
-
 from crewai import Agent, Crew, LLM, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
@@ -8,15 +6,10 @@ from crewai_tools import SerperDevTool
 from datetime import date
 from pydantic import BaseModel, Field
 
-# If you want to run a snippet of code before or after the crew starts,
-# you can use the @before_kickoff and @after_kickoff decorators
-# https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
-
 llm = "groq/llama-3.3-70b-versatile"
 researcher_settings = LLM(model=llm, temperature=0.1)  # factual, structured table
 writer_settings = LLM(model=llm, temperature=0.2)  # structured day-by-day
 guide_settings = LLM(model=llm, temperature=0.4)  # creative recommendations
-flight_settings = LLM(model=llm, temperature=0.1)  # factual flight data
 
 
 class TravelRequest(BaseModel):
@@ -63,10 +56,6 @@ class TravelRequest(BaseModel):
         return (self.end_date - self.start_date).days
 
     def to_crew_inputs(self) -> dict:
-        """
-        Converts the model into the exact dictionary format
-        and string-joined values required by your tasks.yaml.
-        """
         destinations_str = ", ".join(self.destinations)
         return {
             "origin": self.origin,
@@ -89,21 +78,6 @@ class AiTravelAssistant:
 
     agents: list[BaseAgent]
     tasks: list[Task]
-
-    # Learn more about YAML configuration files here:
-    # Agents: https://docs.crewai.com/concepts/agents#yaml-configuration-recommended
-    # Tasks: https://docs.crewai.com/concepts/tasks#yaml-configuration-recommended
-
-    # If you would like to add tools to your agents, you can learn more about it here:
-    # https://docs.crewai.com/concepts/agents#agent-tools
-    @agent
-    def flight_agent(self) -> Agent:
-        return Agent(
-            config=self.agents_config["flight_expert"],  # type: ignore[index]
-            llm=flight_settings,
-            tools=[SerperDevTool()],
-            verbose=True,
-        )
 
     @agent
     def travel_researcher(self) -> Agent:
@@ -132,21 +106,10 @@ class AiTravelAssistant:
             tools=[SerperDevTool()],
         )
 
-    # To learn more about structured task outputs,
-    # task dependencies, and task callbacks, check out the documentation:
-    # https://docs.crewai.com/concepts/tasks#overview-of-a-task
-    @task
-    def find_flights(self) -> Task:
-        return Task(
-            config=self.tasks_config["flight_research"],  # type: ignore[index]
-            output_file="outputs/flight_options.md",
-        )
-
     @task
     def research_destinations(self) -> Task:
         return Task(
             config=self.tasks_config["destination_analysis"],  # type: ignore[index]
-            context=[self.find_flights()],
         )
 
     @task
@@ -161,25 +124,19 @@ class AiTravelAssistant:
     def itinerary_guide(self) -> Task:
         return Task(
             config=self.tasks_config["full_itinerary"],  # type: ignore[index]
-            context=[
-                # self.find_flights(),
-                self.research_destinations(),
-                self.local_insights(),
-            ],
+            context=[self.research_destinations(), self.local_insights()],
             output_file="outputs/suggested_itinerary.md",
         )
 
     @crew
     def crew(self) -> Crew:
         """Creates the AiTravelAssistant crew"""
-        # To learn how to add knowledge sources to your crew, check out the documentation:
-        # https://docs.crewai.com/concepts/knowledge#what-is-knowledge
-
         return Crew(
             agents=self.agents,  # Automatically created by the @agent decorator
             tasks=self.tasks,  # Automatically created by the @task decorator
             process=Process.sequential,
             verbose=True,
             max_rpm=5,  # ~5 calls/min keeps token usage under Groq's 12K TPM free tier limit
-            # process=Process.hierarchical, # In case you wanna use that instead https://docs.crewai.com/how-to/Hierarchical/
         )
+
+
