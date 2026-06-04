@@ -1,5 +1,7 @@
 import os
+import re
 import streamlit as st
+import pandas as pd
 from datetime import date, timedelta
 
 from ai_travel_assistant.crew import AiTravelAssistant, TravelRequest
@@ -34,6 +36,49 @@ OUTPUT_ITINERARY = "outputs/suggested_itinerary.md"
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def parse_destinations(raw: str) -> list[str]:
     return [d.strip() for d in raw.split(",") if d.strip()]
+
+
+FLIGHT_COLUMNS = [
+    "Flight No.", "Date", "Dep. Time", "Arr. Time",
+    "Journey Time", "Stops", "Price", "Airline",
+    "Departure Airport", "Arrival Airport",
+]
+
+
+def parse_flight_section(text: str, section: str) -> pd.DataFrame | None:
+    """Extract a numbered flight list from one section and return as a DataFrame."""
+    pattern = rf"##\s*{re.escape(section)}\s*\n(.*?)(?=\n##\s|\Z)"
+    match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+    if not match:
+        return None
+
+    rows = []
+    for line in match.group(1).strip().splitlines():
+        line = line.strip()
+        # Match lines starting with a number: "1. ..." or "1) ..."
+        if not re.match(r"^\d+[.)]\s", line):
+            continue
+        # Strip the leading number
+        line = re.sub(r"^\d+[.)]\s*", "", line)
+        parts = [p.strip() for p in line.split("|")]
+        if len(parts) >= 10:
+            rows.append(parts[:10])
+
+    if not rows:
+        return None
+    return pd.DataFrame(rows, columns=FLIGHT_COLUMNS)
+
+
+def render_flight_results(flights_text: str) -> None:
+    for section in ("Outbound Flights", "Return Flights"):
+        st.markdown(f"### {section}")
+        df = parse_flight_section(flights_text, section)
+        if df is not None and not df.empty:
+            st.dataframe(df, use_container_width=True, hide_index=True)
+        else:
+            # Fallback: render as plain markdown if parsing fails
+            st.markdown(flights_text)
+            break
 
 
 def read_output(path: str) -> str | None:
@@ -339,7 +384,7 @@ else:
     if st.session_state.flights:
         st.divider()
         st.subheader("Flight Options")
-        st.markdown(st.session_state.flights)
+        render_flight_results(st.session_state.flights)
         st.download_button(
             label="Download Flight Options",
             data=st.session_state.flights,
