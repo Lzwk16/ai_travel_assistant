@@ -1,12 +1,36 @@
 # AI Travel Assistant
 
-A multi-agent AI travel planning system built with [crewAI](https://crewai.com). The app offers two independent modes — **Plan Itinerary** and **Find Flights** — each backed by a different crewAI architectural pattern chosen to match the complexity and precision requirements of that task.
+A multi-agent AI travel planning system that researches destinations, gathers local insights, and finds real flights — all from a single Streamlit interface.
+
+## Overview
+
+AI Travel Assistant automates travel research and planning through two independent modes. **Plan itinerary** runs three specialised AI agents in sequence to analyse destinations, surface local insights, and produce a detailed day-by-day schedule. **Find flights** uses a dedicated agent backed by real Google Flights data to search multiple airports per city, filter poor-value connections, and rank options by a balanced score of price, journey time, and stops.
+
+Built with Python, [crewAI](https://crewai.com) 1.13.0, Groq (`llama-3.3-70b-versatile` / `llama-3.1-8b-instant`), SerpAPI, and Streamlit.
 
 ## Architecture
 
-### Mode 1 — Plan Itinerary (`AiTravelAssistant` Crew)
+```
+ai_travel_assistant/
+├── app.py                           # Streamlit UI — mode selector, forms, result display
+├── src/ai_travel_assistant/
+│   ├── crew.py                      # TravelRequest model + AiTravelAssistant crew (3 agents)
+│   ├── flight_flow.py               # FlightRequest model + FlightSearchFlow + inline flight agent
+│   ├── main.py                      # CLI entry points (run, train, test, replay)
+│   ├── tools/
+│   │   └── custom_tool.py           # GoogleFlightsTool — SerpAPI Google Flights integration
+│   └── config/
+│       ├── agents.yaml              # Role, goal, backstory for the 3 itinerary crew agents
+│       └── tasks.yaml               # Task descriptions and expected outputs
+└── outputs/
+    ├── recommended_insights.md      # Local Guide output
+    ├── suggested_itinerary.md       # Itinerary Writer output
+    └── flight_options.md            # FlightSearchFlow output
+```
 
-Three agents run sequentially. Each agent's output is passed as context to the next.
+### Mode 1 — Plan itinerary (`AiTravelAssistant` crew)
+
+Three agents run sequentially; each agent's output is passed as context to the next.
 
 ```
 TravelRequest
@@ -41,11 +65,11 @@ TravelRequest
 └─────────────────────┘
 ```
 
-**Day Distribution Logic**
+**Day distribution logic**
 
-The Travel Researcher decides how to split the trip duration across multiple destinations:
+The Travel Researcher decides how to split the trip duration across destinations:
 
-| Travel Style | Behaviour |
+| Travel style | Behaviour |
 |---|---|
 | `relax` | Depth over breadth: more days per destination, fewer moves |
 | `adventure` | More stops, shorter stays, optimised for variety |
@@ -53,112 +77,82 @@ The Travel Researcher decides how to split the trip duration across multiple des
 
 Transit time between destinations is always accounted for (minimum half a day).
 
----
+### Mode 2 — Find flights (`FlightSearchFlow` flow)
 
-### Mode 2 — Find Flights (`FlightSearchFlow` Flow)
-
-A single-step crewAI Flow via LLM API call with structured output. Skips the task-planning overhead of a full Crew and reduces token consumption.
+A single-step crewAI Flow that runs a dedicated flight research agent backed by real Google Flights data via SerpAPI. Returns verified, structured results — no hallucinated flight numbers or times.
 
 ```
 FlightRequest
       │
       ▼
-┌───────────────────────────────────────────────────┐
-│  FlightSearchFlow                                 │
-│                                                   │
-│  • Web search via SerperDevTool                   │
-│  • Searches for 5 flight options (outbound+return)│
-│  • Compares price, times, airlines, airports      │
-│  → outputs/flight_options.md                      │
-└───────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│  FlightSearchFlow  →  Flight Research Agent                       │
+│                                                                   │
+│  • Resolves city names to IATA codes (e.g. Tokyo → NRT + HND)    │
+│  • Calls GoogleFlightsTool (SerpAPI) for each airport pair        │
+│  • Searches all major airports per city (multi-airport cities)    │
+│  • Filters options whose journey time > 1.5× the shortest found  │
+│  • Ranks remaining options: price 40% / journey time 40% /        │
+│    stops 20% — selects top 5 outbound + top 5 return              │
+│  → outputs/flight_options.md                                      │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
----
+**Multi-airport city support**
 
-### Source Files
+The agent knows that several cities have more than one major international airport and always searches all of them:
 
-| File | Purpose |
+| City | Airports searched |
 |---|---|
-| `src/ai_travel_assistant/crew.py` | `TravelRequest` model + `AiTravelAssistant` crew (3 agents) |
-| `src/ai_travel_assistant/flight_flow.py` | `FlightRequest` model + `FlightSearchFlow` |
-| `src/ai_travel_assistant/config/agents.yaml` | Agent role, goal, backstory for the itinerary crew |
-| `src/ai_travel_assistant/config/tasks.yaml` | Task descriptions and expected outputs for the itinerary crew |
-| `app.py` | Streamlit UI — mode selector, forms, result display |
-| `main.py` | CLI entry points (`run`, `train`, `test`, `replay`) for the itinerary crew |
+| Tokyo | NRT (Narita) + HND (Haneda) |
+| London | LHR (Heathrow) + LGW (Gatwick) |
+| Paris | CDG (Charles de Gaulle) + ORY (Orly) |
 
----
+End users type city names in the Streamlit form — the agent resolves IATA codes automatically.
 
-### Input Models
+**Output columns**
 
-**`TravelRequest`** — used by Plan Itinerary mode (`crew.py`)
+Results render as two labelled DataFrames in Streamlit (`## Outbound Flights` / `## Return Flights`):
 
-| Field | Type | Description | Example |
-|---|---|---|---|
-| `origin` | `str` | Departure city/country | `"Singapore"` |
-| `destinations` | `list[str]` | All cities/countries to visit | `["Tokyo", "Osaka"]` |
-| `start_date` | `date` | Trip start date | `date(2025, 9, 1)` |
-| `end_date` | `date` | Trip end date | `date(2025, 9, 10)` |
-| `group_size` | `int` | Number of travellers | `2` |
-| `budget_type` | `str` | `"budget"`, `"mid-range"`, or `"luxury"` | `"mid-range"` |
-| `interests` | `list[str]` | Activities of interest | `["food", "local culture"]` |
-| `travel_style` | `str` | `"relax"`, `"adventure"`, or `"business"` | `"relax"` |
-| `currency` | `str` | Currency for all cost estimates (default: `"SGD"`) | `"SGD"` |
+| Column | Description |
+|---|---|
+| Flight No. | Airline + flight number |
+| Date | Departure date |
+| Dep. Time | Departure time (local) |
+| Arr. Time | Arrival time (local) |
+| Journey Time | Total elapsed time including connections |
+| Stops | Nonstop / 1 stop / 2 stops |
+| Price | Fare in the selected currency |
+| Airline | Operating carrier |
+| Departure Airport | IATA code + full airport name |
+| Arrival Airport | IATA code + full airport name |
 
-**`FlightRequest`** — used by Find Flights mode (`flight_flow.py`)
+## Installation & Setup
 
-| Field | Type | Description | Example |
-|---|---|---|---|
-| `origin` | `str` | Departure city/country | `"Singapore"` |
-| `destinations` | `list[str]` | Destination cities/countries | `["Tokyo"]` |
-| `start_date` | `date` | Outbound departure date | `date(2025, 9, 1)` |
-| `end_date` | `date` | Return date | `date(2025, 9, 10)` |
-| `currency` | `str` | Currency for price display (default: `"SGD"`) | `"SGD"` |
-
----
-
-### Output Files
-
-| File | Produced by | Contents |
-|---|---|---|
-| `outputs/recommended_insights.md` | Local Guide (itinerary crew) | Per-destination insider guide scaled to days allocated |
-| `outputs/suggested_itinerary.md` | Itinerary Writer (itinerary crew) | Full day-by-day schedule with accommodation, dining, transport, and budget breakdown |
-| `outputs/flight_options.md` | FlightSearchFlow | 5 flight options with number, times, price, airline, and airports |
-
----
-
-## Environment Setup
-
-### Prerequisites
+**Prerequisites**
 
 - Python `>=3.10, <3.14`
-- [uv](https://docs.astral.sh/uv/) — install with `pip install uv`
+- [uv](https://docs.astral.sh/uv/) — `pip install uv`
 
-### 1. Clone and install dependencies
+**Install dependencies**
 
 ```bash
 git clone <repo-url>
 cd ai_travel_assistant
-crewai install        # installs all dependencies via uv
+crewai install
 ```
 
-### 2. Configure environment variables
+**Environment variables**
 
-Create a `.env` and fill in the required keys:
+Create a `.env` file in the project root:
 
-```bash
-# LLM provider — project uses Groq by default
-# You may use other proprietary model providers as needed
-GROQ_API_KEY=your_groq_api_key
+| Variable | Required | Description |
+|---|---|---|
+| `GROQ_API_KEY` | Yes | LLM provider — [console.groq.com](https://console.groq.com) (free tier available) |
+| `SERPER_API_KEY` | Yes | Web search for itinerary crew agents — [serper.dev](https://serper.dev) (free: 2,500 searches) |
+| `SERP_API_KEY` | Yes | Google Flights data for flight search agent — [serpapi.com](https://serpapi.com) (free: 100 searches/month) |
 
-# Web search tool used by agents
-SERPER_API_KEY=your_serper_api_key
-```
-
-Get your API keys here:
-- **Groq**: [console.groq.com](https://console.groq.com) (free tier available)
-- **Serper**: [serper.dev](https://serper.dev) (free tier: 2,500 searches)
-
-### 3. Run
+## Usage
 
 **Streamlit UI (recommended)**
 
@@ -166,9 +160,10 @@ Get your API keys here:
 uv run streamlit run app.py
 ```
 
-Opens at `http://localhost:8501`. Use the mode selector at the top:
-- **Plan Itinerary** — fill in the full trip form and click **Plan My Trip** to run the 3-agent crew
-- **Find Flights** — fill in the flight form and click **Find Flights** to run the flow
+Opens at `http://localhost:8501`. Select a mode at the top:
+
+- **Plan itinerary** — fill in origin, destinations, dates, group size, budget, travel style, and interests, then click **Plan My Trip**. Results appear in two tabs: full itinerary and local insights, each downloadable as Markdown.
+- **Find flights** — fill in origin, destination, departure date, return date, and currency, then click **Find Flights**. Results render as two DataFrames (outbound and return), downloadable as Markdown.
 
 **CLI (itinerary crew only)**
 
@@ -176,57 +171,51 @@ Opens at `http://localhost:8501`. Use the mode selector at the top:
 crewai run
 ```
 
-Edit `_SAMPLE_REQUEST` in `main.py` to change the trip inputs. Outputs are written to `outputs/recommended_insights.md` and `outputs/suggested_itinerary.md`.
-
----
-
-## Configuration
-
-### Changing the travel request (CLI)
-
-Edit `_SAMPLE_REQUEST` in `src/ai_travel_assistant/main.py`:
+Edit `_SAMPLE_REQUEST` in `src/ai_travel_assistant/main.py` to change trip inputs:
 
 ```python
 _SAMPLE_REQUEST = TravelRequest(
     origin="Singapore",
-    destinations=["Tokyo", "Osaka"],   # all destinations will be visited
+    destinations=["Tokyo", "Osaka"],
     start_date=date(2025, 9, 1),
     end_date=date(2025, 9, 10),
     group_size=2,
-    budget_type="mid-range",           # "budget" | "mid-range" | "luxury"
+    budget_type="mid-range",    # "budget" | "mid-range" | "luxury"
     interests=["food", "local culture", "sightseeing"],
-    travel_style="relax",              # "relax" | "adventure" | "business"
+    travel_style="relax",       # "relax" | "adventure" | "business"
     currency="SGD",
 )
 ```
 
-### Changing the LLM model
+Outputs are written to `outputs/recommended_insights.md` and `outputs/suggested_itinerary.md`.
 
-The itinerary crew agents are configured via LLM settings at the top of `crew.py`. The flight flow agent is configured at the top of `flight_flow.py`. Both use [LiteLLM](https://docs.litellm.ai/docs/providers) provider/model format:
+**Changing the LLM**
+
+Both `crew.py` and `flight_flow.py` use [LiteLLM](https://docs.litellm.ai/docs/providers) provider/model format:
 
 ```python
-# crew.py / flight_flow.py
-llm = "groq/llama-3.3-70b-versatile"   # change this line
+llm = "groq/llama-3.3-70b-versatile"
 
 # Other examples:
 # llm = "anthropic/claude-sonnet-4-20250514"
 # llm = "openai/gpt-4o"
 ```
 
-Add the corresponding API key to `.env` for whichever provider you choose.
+Add the corresponding API key to `.env`.
 
-### Modifying agent behaviour
+**Modifying agent behaviour**
 
 | File | What to change |
 |---|---|
-| `src/ai_travel_assistant/config/agents.yaml` | Role, goal, and backstory for the 3 itinerary crew agents |
-| `src/ai_travel_assistant/config/tasks.yaml` | Task instructions and expected outputs for the itinerary crew |
-| `src/ai_travel_assistant/crew.py` | Tools, LLM settings, and task context wiring for the itinerary crew |
-| `src/ai_travel_assistant/flight_flow.py` | Flight agent role/goal/backstory, prompt, and LLM settings |
+| `config/agents.yaml` | Role, goal, and backstory for the 3 itinerary crew agents |
+| `config/tasks.yaml` | Task instructions and expected outputs for the itinerary crew |
+| `crew.py` | Tools, LLM settings, and task context wiring for the itinerary crew |
+| `flight_flow.py` | Flight agent role/goal/backstory, prompt, and LLM settings |
+| `tools/custom_tool.py` | SerpAPI parameters, response parsing, and output formatting |
 
----
+## Future work
 
-## Future Work
-
-1. Include advanced reasoning, planning, collaboration, and state memory into agents for more complex and detailed itinerary planning
-2. Infrastructure & deployment: Docker containerisation, observability, and evaluation
+1. API & Front-end development for more user friendly interface
+2. Include advanced reasoning, planning, collaboration, and state memory into
+   agents for more complex and detailed itinerary planning
+3. Infrastructure & deployment: Docker containerisation, observability, and evaluation
