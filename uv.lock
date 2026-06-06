@@ -17,12 +17,14 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "crewai", extra = ["litellm", "tools"] },
+    { name = "google-search-results" },
     { name = "streamlit" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "crewai", extras = ["litellm", "tools"], specifier = "==1.13.0" },
+    { name = "google-search-results", specifier = ">=2.4.2" },
     { name = "streamlit", specifier = ">=1.57.0" },
 ]
 
@@ -928,6 +930,15 @@ sdist = { url = "https://files.pythonhosted.org/packages/33/f6/354ae6491228b5eb4
 wheels = [
     { url = "https://files.pythonhosted.org/packages/20/7a/1c6e3562dfd8950adbb11ffbc65d21e7c89d01a6e4f137fa981056de25c5/gitpython-3.1.50-py3-none-any.whl", hash = "sha256:d352abe2908d07355014abdd21ddf798c2a961469239afec4962e9da884858f9", size = 212507, upload-time = "2026-05-06T04:01:23.799Z" },
 ]
+
+[[package]]
+name = "google-search-results"
+version = "2.4.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/77/30/b3a6f6a2e00f8153549c2fa345c58ae1ce8e5f3153c2fe0484d444c3abcb/google_search_results-2.4.2.tar.gz", hash = "sha256:603a30ecae2af8e600b22635757a6df275dad4b934f975e67878ccd640b78245", size = 18818, upload-time = "2023-03-10T11:13:09.953Z" }
 
 [[package]]
 name = "googleapis-common-protos"

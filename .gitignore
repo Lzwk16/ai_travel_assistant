@@ -7,3 +7,4 @@ CLAUDE.md
 .venv
 knowledge/
 outputs/
+.claude/
