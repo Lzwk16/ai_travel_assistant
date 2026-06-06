@@ -15,13 +15,13 @@ stops.
 
 ```
 ai_travel_assistant/
-├── app.py                           # Streamlit UI — mode selector, forms, result display
+├── app.py                           # Streamlit UI with mode selector, forms, result display
 ├── src/ai_travel_assistant/
 │   ├── crew.py                      # TravelRequest model + AiTravelAssistant crew (3 agents)
 │   ├── flight_flow.py               # FlightRequest model + FlightSearchFlow + inline flight agent
 │   ├── main.py                      # CLI entry points (run, train, test, replay)
 │   ├── tools/
-│   │   └── custom_tool.py           # GoogleFlightsTool — SerpAPI Google Flights integration
+│   │   └── custom_tool.py           # GoogleFlightsTool for SerpAPI Google Flights integration
 │   └── config/
 │       ├── agents.yaml              # Role, goal, backstory for the 3 itinerary crew agents
 │       └── tasks.yaml               # Task descriptions and expected outputs
@@ -82,7 +82,7 @@ Transit time between destinations is always accounted for (minimum half a day).
 
 ### Mode 2 — Find flights (`FlightSearchFlow` flow)
 
-A single-step crewAI Flow that runs a dedicated flight research agent backed by real Google Flights data via SerpAPI. Returns verified, structured results — no hallucinated flight numbers or times.
+A single-step crewAI Flow that runs a dedicated flight research agent backed by real Google Flights data via SerpAPI. Returns verified, structured results with no hallucinated flight numbers or times.
 
 ```
 FlightRequest
@@ -111,11 +111,11 @@ The agent knows that several cities have more than one major international airpo
 | London | LHR (Heathrow) + LGW (Gatwick) |
 | Paris | CDG (Charles de Gaulle) + ORY (Orly) |
 
-End users type city names in the Streamlit form — the agent resolves IATA codes automatically.
+End users type city names in the Streamlit form as the agent resolves IATA codes automatically.
 
 **Output columns**
 
-Results render as two labelled DataFrames in Streamlit (`## Outbound Flights` / `## Return Flights`):
+Results render as two labelled DataFrames in Streamlit (`Outbound Flights` / `Return Flights`):
 
 | Column | Description |
 |---|---|
@@ -174,10 +174,10 @@ Opens at `http://localhost:8501`. Select a mode at the top:
 crewai run
 ```
 
-Edit `_SAMPLE_REQUEST` in `src/ai_travel_assistant/main.py` to change trip inputs:
+Edit `sample_request` in `src/ai_travel_assistant/main.py` to change trip inputs:
 
 ```python
-_SAMPLE_REQUEST = TravelRequest(
+sample_request = TravelRequest(
     origin="Singapore",
     destinations=["Tokyo", "Osaka"],
     start_date=date(2025, 9, 1),

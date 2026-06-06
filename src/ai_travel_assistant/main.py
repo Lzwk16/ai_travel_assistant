@@ -14,7 +14,7 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 # Replace with inputs you want to test with, it will automatically
 # interpolate any tasks and agents information
 
-_SAMPLE_REQUEST = TravelRequest(
+sample_request = TravelRequest(
     origin="Singapore",
     destinations=["Tokyo", "Osaka"],
     start_date=date(2025, 9, 1),
@@ -31,7 +31,7 @@ def run():
     """
     Run the crew.
     """
-    inputs = _SAMPLE_REQUEST.to_crew_inputs()
+    inputs = sample_request.to_crew_inputs()
 
     try:
         AiTravelAssistant().crew().kickoff(inputs=inputs)
