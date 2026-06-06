@@ -11,8 +11,6 @@ day-by-day schedule. **Find flights** uses a dedicated agent backed by real
 Google Flights data to search multiple airports per city, filter poor timing connections, and rank options by a balanced score of price, journey time, and
 stops.
 
-Built with Python, [crewAI](https://crewai.com) 1.13.0, Groq (`llama-3.3-70b-versatile` / `llama-3.1-8b-instant`), SerpAPI, and Streamlit.
-
 ## Architecture
 
 ```
