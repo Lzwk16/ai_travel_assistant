@@ -39,9 +39,16 @@ def parse_destinations(raw: str) -> list[str]:
 
 
 FLIGHT_COLUMNS = [
-    "Flight No.", "Date", "Dep. Time", "Arr. Time",
-    "Journey Time", "Stops", "Price", "Airline",
-    "Departure Airport", "Arrival Airport",
+    "Flight No.",
+    "Date",
+    "Dep. Time",
+    "Arr. Time",
+    "Journey Time",
+    "Stops",
+    "Price",
+    "Airline",
+    "Departure Airport",
+    "Arrival Airport",
 ]
 
 
@@ -113,6 +120,11 @@ st.caption(
     "Choose a mode: **Plan Itinerary** uses three AI agents to research your destinations, "
     "gather local insights, and build a day-by-day itinerary. "
     "**Find Flights** uses a dedicated flight agent to search for the best deals."
+)
+st.caption(
+    "⚠️ Outputs are AI-generated suggestions. Please review itineraries, local insights, "
+    "and flight options before booking. Verify prices, availability, and details directly "
+    "with airlines or travel providers."
 )
 st.divider()
 
@@ -246,7 +258,9 @@ if mode == "🗺️ Plan Itinerary":
                 f"This takes a few minutes while agents are working…"
             )
 
-            with st.spinner("Agents are researching destinations, gathering local insights, and writing your itinerary…"):
+            with st.spinner(
+                "Agents are researching destinations, gathering local insights, and writing your itinerary…"
+            ):
                 try:
                     insights, itinerary = run_itinerary(request)
                     st.session_state.insights = insights
@@ -262,7 +276,9 @@ if mode == "🗺️ Plan Itinerary":
         st.divider()
         st.subheader("Your Travel Plan")
 
-        tab_itinerary, tab_insights = st.tabs(["📅 Full Itinerary", "📍 Local Insights"])
+        tab_itinerary, tab_insights = st.tabs(
+            ["📅 Full Itinerary", "📍 Local Insights"]
+        )
 
         with tab_itinerary:
             if st.session_state.itinerary:

@@ -1,10 +1,15 @@
 # AI Travel Assistant
 
-A multi-agent AI travel planning system that researches destinations, gathers local insights, and finds real flights — all from a single Streamlit interface.
+A multi-agent AI travel planning system that researches destinations, gathers local insights, and finds real flights, all from a simple Streamlit interface.
 
 ## Overview
 
-AI Travel Assistant automates travel research and planning through two independent modes. **Plan itinerary** runs three specialised AI agents in sequence to analyse destinations, surface local insights, and produce a detailed day-by-day schedule. **Find flights** uses a dedicated agent backed by real Google Flights data to search multiple airports per city, filter poor-value connections, and rank options by a balanced score of price, journey time, and stops.
+AI Travel Assistant automates travel research and planning through two
+independent modes. **Plan itinerary** runs three specialised AI agents in
+sequence to analyse destinations, surface local insights, and produce a detailed
+day-by-day schedule. **Find flights** uses a dedicated agent backed by real
+Google Flights data to search multiple airports per city, filter poor timing connections, and rank options by a balanced score of price, journey time, and
+stops.
 
 Built with Python, [crewAI](https://crewai.com) 1.13.0, Groq (`llama-3.3-70b-versatile` / `llama-3.1-8b-instant`), SerpAPI, and Streamlit.
 
@@ -88,10 +93,10 @@ FlightRequest
 ┌───────────────────────────────────────────────────────────────────┐
 │  FlightSearchFlow  →  Flight Research Agent                       │
 │                                                                   │
-│  • Resolves city names to IATA codes (e.g. Tokyo → NRT + HND)    │
+│  • Resolves city names to IATA codes (e.g. Tokyo → NRT + HND)     │
 │  • Calls GoogleFlightsTool (SerpAPI) for each airport pair        │
 │  • Searches all major airports per city (multi-airport cities)    │
-│  • Filters options whose journey time > 1.5× the shortest found  │
+│  • Filters options whose journey time > 1.5× the shortest found   │
 │  • Ranks remaining options: price 40% / journey time 40% /        │
 │    stops 20% — selects top 5 outbound + top 5 return              │
 │  → outputs/flight_options.md                                      │
