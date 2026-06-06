@@ -31,7 +31,7 @@ destination_analysis:
 
     Provide specific, actionable information with current data for every destination listed.
   expected_output: >
-    Per-destination analysis covering weather, costs in {currency}, activities, seasonal tips, and logistics — followed by a day-distribution table (Destination | Days Allocated | Reasoning) that downstream agents must follow
+    Markdown report with one section per destination covering: weather forecast for the travel dates, cost breakdown (flights, accommodation, daily spend) in {currency}, top activities matched to {interests}, seasonal events or warnings, and safety/logistics notes. Followed by a day-distribution table with columns Destination | Days Allocated | Reasoning that accounts for transit time and travel style. Downstream agents must follow this table exactly.
   agent: travel_researcher
 
 local_expert_insights:
@@ -57,7 +57,13 @@ local_expert_insights:
     - Group Size: {group_size} people
     - Currency: {currency}
   expected_output: >
-    Per-destination local expert guide, ordered to match the day-distribution table, with recommendations scaled to days allocated per destination
+    Markdown guide with one section per destination, ordered to match the day-distribution table. Each section must include:
+    (1) At least 3 hidden gems with specific names, districts, and a sentence on why locals rate them.
+    (2) Cultural customs and etiquette — greetings, tipping norms, dress codes, behaviours to avoid.
+    (3) At least 5 dining picks with the restaurant or stall name, signature dish, estimated price per person in {currency}, neighbourhood, and whether advance booking is required.
+    (4) Crowd-avoidance and timing tips for the top attractions — best arrival times, which days to avoid, queue strategies.
+    (5) Practical local advice — recommended transport card or app, key neighbourhoods to base yourself in, safety notes, useful phrases.
+    Destinations with more days allocated must receive proportionally more recommendations.
   agent: local_guide
 
 full_itinerary:
@@ -114,7 +120,16 @@ full_itinerary:
 
     All cost estimates must be stated in {currency}.
   expected_output: >
-    Complete day-by-day travel itinerary in markdown format with accommodations, dining, activities, transportation, and detailed budget breakdown
+    Complete day-by-day itinerary in markdown covering every day from {start_date} to {end_date}. Each day must include:
+    - Morning, afternoon, and evening sections with specific named venues and their districts.
+    - At least one dining recommendation per meal period — include the dish name and estimated cost in {currency}.
+    - Transport mode, estimated journey time, and cost for each leg of the day.
+    - A "⚠️ Book in advance" flag on any venue or experience that requires prior reservation.
+    - At least one insider tip or local note per day drawn from the local expert insights.
+    Transit days between destinations must be explicitly labelled as transit days with travel logistics.
+    After the daily schedule, include:
+    - A budget breakdown table: Accommodation | Transport | Food | Activities | Miscellaneous | Total (all in {currency}).
+    - A practical info section: weather and packing tips, key emergency contacts, and top cultural etiquette reminders.
   agent: itinerary_writer
 
 # research_task:

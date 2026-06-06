@@ -43,7 +43,7 @@ def train():
     """
     Train the crew for a given number of iterations.
     """
-    inputs = _SAMPLE_REQUEST.to_crew_inputs()
+    inputs = sample_request.to_crew_inputs()
     try:
         AiTravelAssistant().crew().train(
             n_iterations=int(sys.argv[1]), filename=sys.argv[2], inputs=inputs
@@ -68,7 +68,7 @@ def test():
     """
     Test the crew execution and returns the results.
     """
-    inputs = _SAMPLE_REQUEST.to_crew_inputs()
+    inputs = sample_request.to_crew_inputs()
 
     try:
         AiTravelAssistant().crew().test(
