@@ -1,9 +1,10 @@
 #!/usr/bin/env python
+import json
 import sys
 import warnings
-import json
-
 from datetime import date
+
+from crewai import Crew
 
 from ai_travel_assistant.crew import AiTravelAssistant, TravelRequest
 
@@ -14,7 +15,7 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 # Replace with inputs you want to test with, it will automatically
 # interpolate any tasks and agents information
 
-sample_request = TravelRequest(
+SAMPLE_REQUEST = TravelRequest(
     origin="Singapore",
     destinations=["Tokyo", "Osaka"],
     start_date=date(2025, 9, 1),
@@ -27,30 +28,34 @@ sample_request = TravelRequest(
 )
 
 
+def _build_crew() -> Crew:
+    return AiTravelAssistant().crew()
+
+
 def run():
     """
     Run the crew.
     """
-    inputs = sample_request.to_crew_inputs()
+    inputs = SAMPLE_REQUEST.to_crew_inputs()
 
     try:
-        AiTravelAssistant().crew().kickoff(inputs=inputs)
+        _build_crew().kickoff(inputs=inputs)
     except Exception as e:
-        raise Exception(f"An error occurred while running the crew: {e}")
+        raise RuntimeError(f"An error occurred while running the crew: {e}") from e
 
 
 def train():
     """
     Train the crew for a given number of iterations.
     """
-    inputs = sample_request.to_crew_inputs()
+    inputs = SAMPLE_REQUEST.to_crew_inputs()
     try:
-        AiTravelAssistant().crew().train(
+        _build_crew().train(
             n_iterations=int(sys.argv[1]), filename=sys.argv[2], inputs=inputs
         )
 
     except Exception as e:
-        raise Exception(f"An error occurred while training the crew: {e}")
+        raise RuntimeError(f"An error occurred while training the crew: {e}") from e
 
 
 def replay():
@@ -58,25 +63,25 @@ def replay():
     Replay the crew execution from a specific task.
     """
     try:
-        AiTravelAssistant().crew().replay(task_id=sys.argv[1])
+        _build_crew().replay(task_id=sys.argv[1])
 
     except Exception as e:
-        raise Exception(f"An error occurred while replaying the crew: {e}")
+        raise RuntimeError(f"An error occurred while replaying the crew: {e}") from e
 
 
 def test():
     """
     Test the crew execution and returns the results.
     """
-    inputs = sample_request.to_crew_inputs()
+    inputs = SAMPLE_REQUEST.to_crew_inputs()
 
     try:
-        AiTravelAssistant().crew().test(
+        _build_crew().test(
             n_iterations=int(sys.argv[1]), eval_llm=sys.argv[2], inputs=inputs
         )
 
     except Exception as e:
-        raise Exception(f"An error occurred while testing the crew: {e}")
+        raise RuntimeError(f"An error occurred while testing the crew: {e}") from e
 
 
 def run_with_trigger():
@@ -86,22 +91,23 @@ def run_with_trigger():
     Example: run_with_trigger '{"origin":"Singapore","destinations":["Tokyo"],...}'
     """
     if len(sys.argv) < 2:
-        raise Exception(
+        raise ValueError(
             "No trigger payload provided. Please provide JSON payload as argument."
         )
 
     try:
         trigger_payload = json.loads(sys.argv[1])
-    except json.JSONDecodeError:
-        raise Exception("Invalid JSON payload provided as argument")
+    except json.JSONDecodeError as e:
+        raise ValueError("Invalid JSON payload provided as argument") from e
 
     try:
         request = TravelRequest.model_validate(trigger_payload)
     except Exception as e:
-        raise Exception(f"Invalid TravelRequest payload: {e}")
+        raise ValueError(f"Invalid TravelRequest payload: {e}") from e
 
     try:
-        result = AiTravelAssistant().crew().kickoff(inputs=request.to_crew_inputs())
-        return result
+        return _build_crew().kickoff(inputs=request.to_crew_inputs())
     except Exception as e:
-        raise Exception(f"An error occurred while running the crew with trigger: {e}")
+        raise RuntimeError(
+            f"An error occurred while running the crew with trigger: {e}"
+        ) from e

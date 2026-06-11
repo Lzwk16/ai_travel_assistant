@@ -1,11 +1,17 @@
 import os
-import re
-import streamlit as st
-import pandas as pd
 from datetime import date, timedelta
 
+import streamlit as st
+
+from ai_travel_assistant.config import (
+    FLIGHT_OPTIONS_FILE,
+    INSIGHTS_FILE,
+    ITINERARY_FILE,
+    ensure_outputs_dir,
+)
 from ai_travel_assistant.crew import AiTravelAssistant, TravelRequest
 from ai_travel_assistant.flight_flow import FlightRequest, FlightSearchFlow
+from ai_travel_assistant.flight_results import parse_flight_section
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -28,9 +34,10 @@ INTERESTS_OPTIONS = [
     "History",
 ]
 
-OUTPUT_FLIGHTS = "outputs/flight_options.md"
-OUTPUT_INSIGHTS = "outputs/recommended_insights.md"
-OUTPUT_ITINERARY = "outputs/suggested_itinerary.md"
+CURRENCY_OPTIONS = ["SGD", "USD", "EUR", "GBP", "JPY", "AUD", "MYR"]
+
+DEFAULT_START_OFFSET = timedelta(days=30)
+DEFAULT_END_OFFSET = timedelta(days=39)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -38,42 +45,44 @@ def parse_destinations(raw: str) -> list[str]:
     return [d.strip() for d in raw.split(",") if d.strip()]
 
 
-FLIGHT_COLUMNS = [
-    "Flight No.",
-    "Date",
-    "Dep. Time",
-    "Arr. Time",
-    "Journey Time",
-    "Stops",
-    "Price",
-    "Airline",
-    "Departure Airport",
-    "Arrival Airport",
-]
+def validate_trip_form(
+    origin: str,
+    destinations: list[str],
+    start_date: date,
+    end_date: date,
+    date_error: str,
+    interests: list[str] | None = None,
+) -> list[str]:
+    """Return human-readable validation errors; empty list means the form is valid."""
+    errors = []
+    if not origin.strip():
+        errors.append("Origin is required.")
+    if not destinations:
+        errors.append("At least one destination is required.")
+    if end_date <= start_date:
+        errors.append(date_error)
+    if interests is not None and not interests:
+        errors.append("Select at least one interest.")
+    return errors
 
 
-def parse_flight_section(text: str, section: str) -> pd.DataFrame | None:
-    """Extract a numbered flight list from one section and return as a DataFrame."""
-    pattern = rf"##\s*{re.escape(section)}\s*\n(.*?)(?=\n##\s|\Z)"
-    match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
-    if not match:
-        return None
+def show_errors(errors: list[str]) -> None:
+    for error in errors:
+        st.error(error)
 
-    rows = []
-    for line in match.group(1).strip().splitlines():
-        line = line.strip()
-        # Match lines starting with a number: "1. ..." or "1) ..."
-        if not re.match(r"^\d+[.)]\s", line):
-            continue
-        # Strip the leading number
-        line = re.sub(r"^\d+[.)]\s*", "", line)
-        parts = [p.strip() for p in line.split("|")]
-        if len(parts) >= 10:
-            rows.append(parts[:10])
 
-    if not rows:
-        return None
-    return pd.DataFrame(rows, columns=FLIGHT_COLUMNS)
+def show_crew_error() -> None:
+    if st.session_state.error:
+        st.error(f"The crew encountered an error:\n\n{st.session_state.error}")
+
+
+def markdown_download_button(label: str, content: str, file_name: str) -> None:
+    st.download_button(
+        label=label,
+        data=content,
+        file_name=file_name,
+        mime="text/markdown",
+    )
 
 
 def render_flight_results(flights_text: str) -> None:
@@ -97,53 +106,21 @@ def read_output(path: str) -> str | None:
 
 def run_itinerary(request: TravelRequest) -> tuple[str | None, str | None]:
     """Run the itinerary crew and return (insights_md, itinerary_md)."""
-    os.makedirs("outputs", exist_ok=True)
+    ensure_outputs_dir()
     AiTravelAssistant().crew().kickoff(inputs=request.to_crew_inputs())
-    return read_output(OUTPUT_INSIGHTS), read_output(OUTPUT_ITINERARY)
+    return read_output(INSIGHTS_FILE), read_output(ITINERARY_FILE)
 
 
 def run_flight_search(request: FlightRequest) -> str | None:
     """Run the flight search flow and return flights_md."""
     FlightSearchFlow().kickoff(inputs=request.to_flow_inputs())
-    return read_output(OUTPUT_FLIGHTS)
-
-
-# ── Session state init ────────────────────────────────────────────────────────
-for key in ("flights", "insights", "itinerary", "error"):
-    if key not in st.session_state:
-        st.session_state[key] = None
-
-
-# ── Header ────────────────────────────────────────────────────────────────────
-st.title("✈️ AI Travel Assistant")
-st.caption(
-    "Choose a mode: **Plan Itinerary** uses three AI agents to research your destinations, "
-    "gather local insights, and build a day-by-day itinerary. "
-    "**Find Flights** uses a dedicated flight agent to search for the best deals."
-)
-st.caption(
-    "⚠️ Outputs are AI-generated suggestions. Please review itineraries, local insights, "
-    "and flight options before booking. Verify prices, availability, and details directly "
-    "with airlines or travel providers."
-)
-st.divider()
-
-
-# ── Mode selector ─────────────────────────────────────────────────────────────
-mode = st.radio(
-    "Mode",
-    ["🗺️ Plan Itinerary", "✈️ Find Flights"],
-    horizontal=True,
-    label_visibility="collapsed",
-)
-st.divider()
+    return read_output(FLIGHT_OPTIONS_FILE)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MODE: Plan Itinerary
 # ══════════════════════════════════════════════════════════════════════════════
-if mode == "🗺️ Plan Itinerary":
-
+def render_itinerary_mode() -> None:
     with st.form("trip_form"):
         st.subheader("Trip Details")
 
@@ -165,13 +142,13 @@ if mode == "🗺️ Plan Itinerary":
         with col3:
             start_date = st.date_input(
                 "Start date",
-                value=date.today() + timedelta(days=30),
+                value=date.today() + DEFAULT_START_OFFSET,
                 min_value=date.today(),
             )
         with col4:
             end_date = st.date_input(
                 "End date",
-                value=date.today() + timedelta(days=39),
+                value=date.today() + DEFAULT_END_OFFSET,
                 min_value=date.today() + timedelta(days=1),
             )
 
@@ -204,7 +181,7 @@ if mode == "🗺️ Plan Itinerary":
         with col8:
             currency = st.selectbox(
                 "Currency for cost estimates",
-                options=["SGD", "USD", "EUR", "GBP", "JPY", "AUD", "MYR"],
+                options=CURRENCY_OPTIONS,
                 index=0,
             )
 
@@ -225,19 +202,17 @@ if mode == "🗺️ Plan Itinerary":
 
         destinations = parse_destinations(destinations_raw)
 
-        errors = []
-        if not origin.strip():
-            errors.append("Origin is required.")
-        if not destinations:
-            errors.append("At least one destination is required.")
-        if end_date <= start_date:
-            errors.append("End date must be after start date.")
-        if not interests:
-            errors.append("Select at least one interest.")
+        errors = validate_trip_form(
+            origin,
+            destinations,
+            start_date,
+            end_date,
+            date_error="End date must be after start date.",
+            interests=interests,
+        )
 
         if errors:
-            for e in errors:
-                st.error(e)
+            show_errors(errors)
         else:
             request = TravelRequest(
                 origin=origin.strip(),
@@ -253,13 +228,15 @@ if mode == "🗺️ Plan Itinerary":
 
             duration_days = (end_date - start_date).days
             st.info(
-                f"Planning a **{duration_days}-day {travel_style}** trip for **{group_size}** "
+                f"Planning a **{duration_days}-day {travel_style}** trip "
+                f"for **{group_size}** "
                 f"from **{origin}** to **{', '.join(destinations)}** ({currency}). "
                 f"This takes a few minutes while agents are working…"
             )
 
             with st.spinner(
-                "Agents are researching destinations, gathering local insights, and writing your itinerary…"
+                "Agents are researching destinations, gathering local insights, "
+                "and writing your itinerary…"
             ):
                 try:
                     insights, itinerary = run_itinerary(request)
@@ -269,8 +246,7 @@ if mode == "🗺️ Plan Itinerary":
                 except Exception as e:
                     st.session_state.error = str(e)
 
-    if st.session_state.error:
-        st.error(f"The crew encountered an error:\n\n{st.session_state.error}")
+    show_crew_error()
 
     if st.session_state.insights or st.session_state.itinerary:
         st.divider()
@@ -283,11 +259,8 @@ if mode == "🗺️ Plan Itinerary":
         with tab_itinerary:
             if st.session_state.itinerary:
                 st.markdown(st.session_state.itinerary)
-                st.download_button(
-                    label="Download Itinerary",
-                    data=st.session_state.itinerary,
-                    file_name="itinerary.md",
-                    mime="text/markdown",
+                markdown_download_button(
+                    "Download Itinerary", st.session_state.itinerary, "itinerary.md"
                 )
             else:
                 st.warning("Itinerary output not found.")
@@ -295,11 +268,10 @@ if mode == "🗺️ Plan Itinerary":
         with tab_insights:
             if st.session_state.insights:
                 st.markdown(st.session_state.insights)
-                st.download_button(
-                    label="Download Local Insights",
-                    data=st.session_state.insights,
-                    file_name="local_insights.md",
-                    mime="text/markdown",
+                markdown_download_button(
+                    "Download Local Insights",
+                    st.session_state.insights,
+                    "local_insights.md",
                 )
             else:
                 st.warning("Local insights output not found.")
@@ -308,20 +280,19 @@ if mode == "🗺️ Plan Itinerary":
 # ══════════════════════════════════════════════════════════════════════════════
 # MODE: Find Flights
 # ══════════════════════════════════════════════════════════════════════════════
-else:
-
+def render_flights_mode() -> None:
     with st.form("flight_form"):
         st.subheader("Flight Search")
 
         col1, col2 = st.columns(2)
         with col1:
-            fl_origin = st.text_input(
+            origin = st.text_input(
                 "Origin city / country",
                 value="Singapore",
                 placeholder="e.g. Singapore",
             )
         with col2:
-            fl_destinations_raw = st.text_input(
+            destinations_raw = st.text_input(
                 "Destinations (comma-separated)",
                 value="Tokyo",
                 placeholder="e.g. Tokyo, Osaka",
@@ -329,60 +300,59 @@ else:
 
         col3, col4 = st.columns(2)
         with col3:
-            fl_start_date = st.date_input(
+            start_date = st.date_input(
                 "Departure date",
-                value=date.today() + timedelta(days=30),
+                value=date.today() + DEFAULT_START_OFFSET,
                 min_value=date.today(),
                 key="fl_start",
             )
         with col4:
-            fl_end_date = st.date_input(
+            end_date = st.date_input(
                 "Return date",
-                value=date.today() + timedelta(days=39),
+                value=date.today() + DEFAULT_END_OFFSET,
                 min_value=date.today() + timedelta(days=1),
                 key="fl_end",
             )
 
-        fl_currency = st.selectbox(
+        currency = st.selectbox(
             "Currency for price display",
-            options=["SGD", "USD", "EUR", "GBP", "JPY", "AUD", "MYR"],
+            options=CURRENCY_OPTIONS,
             index=0,
             key="fl_currency",
         )
 
-        fl_submitted = st.form_submit_button(
+        submitted = st.form_submit_button(
             "✈️ Find Flights", use_container_width=True, type="primary"
         )
 
-    if fl_submitted:
+    if submitted:
         st.session_state.flights = None
         st.session_state.error = None
 
-        fl_destinations = parse_destinations(fl_destinations_raw)
+        destinations = parse_destinations(destinations_raw)
 
-        errors = []
-        if not fl_origin.strip():
-            errors.append("Origin is required.")
-        if not fl_destinations:
-            errors.append("At least one destination is required.")
-        if fl_end_date <= fl_start_date:
-            errors.append("Return date must be after departure date.")
+        errors = validate_trip_form(
+            origin,
+            destinations,
+            start_date,
+            end_date,
+            date_error="Return date must be after departure date.",
+        )
 
         if errors:
-            for e in errors:
-                st.error(e)
+            show_errors(errors)
         else:
             flight_request = FlightRequest(
-                origin=fl_origin.strip(),
-                destinations=fl_destinations,
-                start_date=fl_start_date,
-                end_date=fl_end_date,
-                currency=fl_currency,
+                origin=origin.strip(),
+                destinations=destinations,
+                start_date=start_date,
+                end_date=end_date,
+                currency=currency,
             )
 
             st.info(
-                f"Searching flights from **{fl_origin}** to **{', '.join(fl_destinations)}** "
-                f"departing **{fl_start_date}**, returning **{fl_end_date}** ({fl_currency}). "
+                f"Searching flights from **{origin}** to **{', '.join(destinations)}** "
+                f"departing **{start_date}**, returning **{end_date}** ({currency}). "
                 f"This takes a minute…"
             )
 
@@ -394,16 +364,48 @@ else:
                 except Exception as e:
                     st.session_state.error = str(e)
 
-    if st.session_state.error:
-        st.error(f"The crew encountered an error:\n\n{st.session_state.error}")
+    show_crew_error()
 
     if st.session_state.flights:
         st.divider()
         st.subheader("Flight Options")
         render_flight_results(st.session_state.flights)
-        st.download_button(
-            label="Download Flight Options",
-            data=st.session_state.flights,
-            file_name="flight_options.md",
-            mime="text/markdown",
+        markdown_download_button(
+            "Download Flight Options", st.session_state.flights, "flight_options.md"
         )
+
+
+# ── Session state init ────────────────────────────────────────────────────────
+for key in ("flights", "insights", "itinerary", "error"):
+    if key not in st.session_state:
+        st.session_state[key] = None
+
+
+# ── Header ────────────────────────────────────────────────────────────────────
+st.title("✈️ AI Travel Assistant")
+st.caption(
+    "Choose a mode: **Plan Itinerary** uses three AI agents to research your "
+    "destinations, gather local insights, and build a day-by-day itinerary. "
+    "**Find Flights** uses a dedicated flight agent to search for the best deals."
+)
+st.caption(
+    "⚠️ Outputs are AI-generated suggestions. Please review itineraries, local "
+    "insights, and flight options before booking. Verify prices, availability, "
+    "and details directly with airlines or travel providers."
+)
+st.divider()
+
+
+# ── Mode selector ─────────────────────────────────────────────────────────────
+mode = st.radio(
+    "Mode",
+    ["🗺️ Plan Itinerary", "✈️ Find Flights"],
+    horizontal=True,
+    label_visibility="collapsed",
+)
+st.divider()
+
+if mode == "🗺️ Plan Itinerary":
+    render_itinerary_mode()
+else:
+    render_flights_mode()

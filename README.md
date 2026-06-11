@@ -17,11 +17,13 @@ stops.
 ai_travel_assistant/
 ├── app.py                           # Streamlit UI with mode selector, forms, result display
 ├── src/ai_travel_assistant/
+│   ├── config.py                    # Shared constants: Groq model id, output file paths
 │   ├── crew.py                      # TravelRequest model + AiTravelAssistant crew (3 agents)
 │   ├── flight_flow.py               # FlightRequest model + FlightSearchFlow + inline flight agent
+│   ├── flight_results.py            # Parses flight agent markdown output into DataFrames
 │   ├── main.py                      # CLI entry points (run, train, test, replay)
 │   ├── tools/
-│   │   └── custom_tool.py           # GoogleFlightsTool for SerpAPI Google Flights integration
+│   │   └── google_flights.py        # GoogleFlightsTool for SerpAPI Google Flights integration
 │   └── config/
 │       ├── agents.yaml              # Role, goal, backstory for the 3 itinerary crew agents
 │       └── tasks.yaml               # Task descriptions and expected outputs
@@ -174,10 +176,10 @@ Opens at `http://localhost:8501`. Select a mode at the top:
 crewai run
 ```
 
-Edit `sample_request` in `src/ai_travel_assistant/main.py` to change trip inputs:
+Edit `SAMPLE_REQUEST` in `src/ai_travel_assistant/main.py` to change trip inputs:
 
 ```python
-sample_request = TravelRequest(
+SAMPLE_REQUEST = TravelRequest(
     origin="Singapore",
     destinations=["Tokyo", "Osaka"],
     start_date=date(2025, 9, 1),
@@ -214,7 +216,7 @@ Add the corresponding API key to `.env`.
 | `config/tasks.yaml` | Task instructions and expected outputs for the itinerary crew |
 | `crew.py` | Tools, LLM settings, and task context wiring for the itinerary crew |
 | `flight_flow.py` | Flight agent role/goal/backstory, prompt, and LLM settings |
-| `tools/custom_tool.py` | SerpAPI parameters, response parsing, and output formatting |
+| `tools/google_flights.py` | SerpAPI parameters, response parsing, and output formatting |
 
 ## Future work
 

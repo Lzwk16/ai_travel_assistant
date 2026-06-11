@@ -24,3 +24,8 @@ build-backend = "hatchling.build"
 
 [tool.crewai]
 type = "crew"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.0",
+]

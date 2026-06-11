@@ -1,15 +1,16 @@
-from crewai import Agent, Crew, LLM, Process, Task
-from crewai.project import CrewBase, agent, crew, task
-from crewai.agents.agent_builder.base_agent import BaseAgent
-from crewai_tools import SerperDevTool
-
 from datetime import date
-from pydantic import BaseModel, Field
 
-llm = "groq/llama-3.3-70b-versatile"
-researcher_settings = LLM(model=llm, temperature=0.1)  # factual, structured table
-writer_settings = LLM(model=llm, temperature=0.2)  # structured day-by-day
-guide_settings = LLM(model=llm, temperature=0.4)  # creative recommendations
+from crewai import LLM, Agent, Crew, Process, Task
+from crewai.agents.agent_builder.base_agent import BaseAgent
+from crewai.project import CrewBase, agent, crew, task
+from crewai_tools import SerperDevTool
+from pydantic import BaseModel, Field, model_validator
+
+from ai_travel_assistant.config import GROQ_MODEL, INSIGHTS_FILE, ITINERARY_FILE
+
+RESEARCHER_LLM = LLM(model=GROQ_MODEL, temperature=0.1)  # factual, structured table
+WRITER_LLM = LLM(model=GROQ_MODEL, temperature=0.2)  # structured day-by-day
+GUIDE_LLM = LLM(model=GROQ_MODEL, temperature=0.4)  # creative recommendations
 
 
 class TravelRequest(BaseModel):
@@ -50,6 +51,12 @@ class TravelRequest(BaseModel):
         examples=["SGD", "USD", "JPY"],
     )
 
+    @model_validator(mode="after")
+    def check_date_order(self) -> "TravelRequest":
+        if self.end_date <= self.start_date:
+            raise ValueError("end_date must be after start_date")
+        return self
+
     @property
     def duration(self) -> int:
         """Automatically calculates trip duration in days."""
@@ -83,7 +90,7 @@ class AiTravelAssistant:
     def travel_researcher(self) -> Agent:
         return Agent(
             config=self.agents_config["travel_expert"],  # type: ignore[index]
-            llm=researcher_settings,
+            llm=RESEARCHER_LLM,
             tools=[SerperDevTool()],
             verbose=True,
         )
@@ -92,7 +99,7 @@ class AiTravelAssistant:
     def local_guide(self) -> Agent:
         return Agent(
             config=self.agents_config["local_expert"],  # type: ignore[index]
-            llm=guide_settings,
+            llm=GUIDE_LLM,
             tools=[SerperDevTool()],
             verbose=True,
         )
@@ -101,7 +108,7 @@ class AiTravelAssistant:
     def itinerary_writer(self) -> Agent:
         return Agent(
             config=self.agents_config["travel_consultant"],  # type: ignore[index]
-            llm=writer_settings,
+            llm=WRITER_LLM,
             verbose=True,
             tools=[SerperDevTool()],
         )
@@ -117,7 +124,7 @@ class AiTravelAssistant:
         return Task(
             config=self.tasks_config["local_expert_insights"],  # type: ignore[index]
             context=[self.research_destinations()],
-            output_file="outputs/recommended_insights.md",
+            output_file=INSIGHTS_FILE,
         )
 
     @task
@@ -125,7 +132,7 @@ class AiTravelAssistant:
         return Task(
             config=self.tasks_config["full_itinerary"],  # type: ignore[index]
             context=[self.research_destinations(), self.local_insights()],
-            output_file="outputs/suggested_itinerary.md",
+            output_file=ITINERARY_FILE,
         )
 
     @crew
@@ -136,7 +143,6 @@ class AiTravelAssistant:
             tasks=self.tasks,  # Automatically created by the @task decorator
             process=Process.sequential,
             verbose=True,
-            max_rpm=5,  # ~5 calls/min keeps token usage under Groq's 12K TPM free tier limit
+            # ~5 calls/min keeps token usage under Groq's 12K TPM free tier limit
+            max_rpm=5,
         )
-
-

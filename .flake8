@@ -1,0 +1,7 @@
+[flake8]
+; Align with black: 88-char lines; E203 and E231 conflict with black's
+; slice/f-string formatting (E231 false-positives on colons inside f-strings
+; under PEP 701 tokenization).
+max-line-length = 88
+extend-ignore = E203, E231
+exclude = .venv, .git, __pycache__, build, dist
