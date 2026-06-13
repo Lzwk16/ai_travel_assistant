@@ -155,7 +155,7 @@ Create a `.env` file in the project root:
 |---|---|---|
 | `GROQ_API_KEY` | Yes | LLM provider — [console.groq.com](https://console.groq.com) (free tier available) |
 | `SERPER_API_KEY` | Yes | Web search for itinerary crew agents — [serper.dev](https://serper.dev) (free: 2,500 searches) |
-| `SERP_API_KEY` | Yes | Google Flights data for flight search agent — [serpapi.com](https://serpapi.com) (free: 100 searches/month) |
+| `SERP_API_KEY` | Yes | Google Flights data for flight search agent — [serpapi.com](https://serpapi.com) (free: 250 searches/month) |
 
 ## Usage
 
