@@ -56,10 +56,9 @@ def get_current_user(
             token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
         user_id = int(payload["sub"])
+        user = storage.get_user(user_id)
+        if user is None:
+            raise _credentials_exc
+        return user
     except (jwt.InvalidTokenError, KeyError, ValueError):
         raise _credentials_exc
-
-    user = storage.get_user(user_id)
-    if user is None:
-        raise _credentials_exc
-    return user

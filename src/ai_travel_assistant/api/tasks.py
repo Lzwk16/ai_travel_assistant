@@ -21,6 +21,8 @@ from ai_travel_assistant.config import (
     ITINERARY_FILE,
     ensure_outputs_dir,
 )
+from ai_travel_assistant.crew import AiTravelAssistant, TravelRequest
+from ai_travel_assistant.flight_flow import FlightRequest, FlightSearchFlow
 
 _kickoff_lock = threading.Lock()
 
@@ -33,8 +35,6 @@ def _read_output(path: str) -> str | None:
 
 
 def _run_itinerary(request: dict) -> dict:
-    from ai_travel_assistant.crew import AiTravelAssistant, TravelRequest
-
     ensure_outputs_dir()
     AiTravelAssistant().crew().kickoff(inputs=TravelRequest(**request).to_crew_inputs())
     return {
@@ -44,8 +44,6 @@ def _run_itinerary(request: dict) -> dict:
 
 
 def _run_flights(request: dict) -> dict:
-    from ai_travel_assistant.flight_flow import FlightRequest, FlightSearchFlow
-
     ensure_outputs_dir()
     FlightSearchFlow().kickoff(inputs=FlightRequest(**request).to_flow_inputs())
     return {"flights_md": _read_output(FLIGHT_OPTIONS_FILE)}
