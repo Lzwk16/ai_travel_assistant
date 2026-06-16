@@ -18,6 +18,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from api.storage.base import Trip, User
 from sqlalchemy import (
     JSON,
     DateTime,
@@ -35,8 +36,6 @@ from sqlalchemy.orm import (
     mapped_column,
     sessionmaker,
 )
-
-from ai_travel_assistant.api.storage.base import Trip, User
 
 # Plain JSON on SQLite; JSONB on PostgreSQL (Phase 3) — chosen per-dialect.
 _JSONType = JSON().with_variant(JSONB, "postgresql")

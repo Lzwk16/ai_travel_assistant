@@ -4,10 +4,10 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import ValidationError
 
-from ai_travel_assistant.api.schemas import TripCreate, TripRead
-from ai_travel_assistant.api.security import get_current_user
-from ai_travel_assistant.api.storage import Storage, User, get_storage
-from ai_travel_assistant.api.tasks import run_trip
+from api.schemas import TripCreate, TripRead
+from api.security import get_current_user
+from api.storage import Storage, User, get_storage
+from api.tasks import run_trip
 
 router = APIRouter(prefix="/trips", tags=["trips"])
 

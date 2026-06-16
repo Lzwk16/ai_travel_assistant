@@ -2,12 +2,11 @@
 
 from contextlib import asynccontextmanager
 
+from api import settings
+from api.routers import auth, trips, users
+from api.storage import get_storage
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from ai_travel_assistant.api import settings
-from ai_travel_assistant.api.routers import auth, trips, users
-from ai_travel_assistant.api.storage import get_storage
 
 
 @asynccontextmanager

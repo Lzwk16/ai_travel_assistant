@@ -14,7 +14,7 @@ import os
 import threading
 from datetime import datetime, timezone
 
-from ai_travel_assistant.api.storage import get_storage
+from api.storage import get_storage
 from ai_travel_assistant.config import (
     FLIGHT_OPTIONS_FILE,
     INSIGHTS_FILE,

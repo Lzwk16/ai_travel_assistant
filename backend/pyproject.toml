@@ -29,6 +29,11 @@ run_with_trigger = "ai_travel_assistant.main:run_with_trigger"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+# Two packages now ship from this project: the crewAI engine (kept under the
+# src/ layout) and the FastAPI web layer at the project root.
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_travel_assistant", "api"]
+
 [tool.crewai]
 type = "crew"
 

@@ -1,15 +1,14 @@
 """Authentication endpoints: register and login (JWT)."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
-
-from ai_travel_assistant.api.schemas import Token, UserCreate, UserRead
-from ai_travel_assistant.api.security import (
+from api.schemas import Token, UserCreate, UserRead
+from api.security import (
     create_access_token,
     hash_password,
     verify_password,
 )
-from ai_travel_assistant.api.storage import Storage, get_storage
+from api.storage import Storage, get_storage
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

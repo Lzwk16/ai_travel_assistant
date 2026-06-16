@@ -8,13 +8,12 @@ secret + constant algorithm) — never hardcoded here.
 from datetime import datetime, timedelta, timezone
 
 import jwt
+from api import settings
+from api.storage import Storage, User, get_storage
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash
 from pwdlib.hashers.bcrypt import BcryptHasher
-
-from ai_travel_assistant.api import settings
-from ai_travel_assistant.api.storage import Storage, User, get_storage
 
 # Only bcrypt is installed (pwdlib[bcrypt]); avoid PasswordHash.recommended(),
 # which would also require argon2-cffi.

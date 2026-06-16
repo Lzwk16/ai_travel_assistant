@@ -14,7 +14,7 @@ import threading
 from datetime import datetime, timezone
 from typing import Any
 
-from ai_travel_assistant.api.storage.base import Trip, User
+from api.storage.base import Trip, User
 
 
 def _now_iso() -> str:
