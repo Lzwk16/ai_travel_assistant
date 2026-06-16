@@ -8,13 +8,9 @@ are plain constants or env-overridable with safe defaults.
 
 import os
 
-try:  # crewai[tools] usually pulls python-dotenv; if not fall back to the ambient env
-    from dotenv import load_dotenv
+from dotenv import load_dotenv
 
-    load_dotenv()
-except ImportError:  # pragma: no cover
-    pass
-
+load_dotenv()
 # --- JWT (auth) ---
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 if not JWT_SECRET_KEY:
