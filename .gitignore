@@ -9,3 +9,5 @@ knowledge/
 outputs/
 .claude/
 docs/
+data/
+travel_assistant.db
