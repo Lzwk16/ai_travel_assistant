@@ -62,3 +62,15 @@ def get_current_user(
         return user
     except (jwt.InvalidTokenError, KeyError, ValueError):
         raise _credentials_exc
+
+
+def require_admin(user: User = Depends(get_current_user)) -> User:
+    """Authorize admin-only endpoints: the authenticated user's ``role`` must be
+    ``"admin"`` (stored per-user in the database). Returns the user so handlers
+    can reuse it; raises 403 otherwise."""
+    if user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"{user.email} is not an admin. Admin privileges required",
+        )
+    return user

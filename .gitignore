@@ -10,3 +10,4 @@ outputs/
 .claude/
 docs/
 data/
+*.db

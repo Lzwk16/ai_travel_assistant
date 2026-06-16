@@ -12,6 +12,7 @@ dependencies = [
     "pwdlib[bcrypt]>=0.3.0",
     "pyjwt>=2.12.1",
     "python-multipart>=0.0.28",
+    "sqlalchemy>=2.0.0",
     "streamlit>=1.57.0",
     "uvicorn[standard]>=0.47.0",
 ]

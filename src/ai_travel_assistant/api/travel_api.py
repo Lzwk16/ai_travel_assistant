@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from ai_travel_assistant.api import settings
-from ai_travel_assistant.api.routers import auth, trips
+from ai_travel_assistant.api.routers import auth, trips, users
 from ai_travel_assistant.api.storage import get_storage
 
 
@@ -25,7 +25,11 @@ def create_app() -> FastAPI:
             "with CORS_ALLOW_CREDENTIALS=true. Set explicit origins to use credentials."
         )
 
-    app = FastAPI(title="AI Travel Assistant API", lifespan=lifespan)
+    app = FastAPI(
+        title="AI Travel Assistant API",
+        lifespan=lifespan,
+        swagger_ui_parameters={"persistAuthorization": True},
+    )
 
     app.add_middleware(
         CORSMiddleware,
@@ -37,6 +41,7 @@ def create_app() -> FastAPI:
 
     app.include_router(auth.router)
     app.include_router(trips.router)
+    app.include_router(users.router)
 
     @app.get("/", tags=["health"])
     def root() -> dict:

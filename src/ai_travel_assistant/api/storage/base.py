@@ -17,6 +17,7 @@ class User:
     id: int
     email: str
     hashed_password: str
+    role: str  # "user" | "admin"
     created_at: datetime
 
 
@@ -39,6 +40,8 @@ class Storage(Protocol):
     def create_user(self, email: str, hashed_password: str) -> User: ...
     def get_user_by_email(self, email: str) -> User | None: ...
     def get_user(self, user_id: int) -> User | None: ...
+    def list_users(self) -> list[User]: ...
+    def set_user_role(self, user_id: int, role: str) -> User: ...
 
     def create_trip(
         self, user_id: int, trip_type: str, request: dict[str, Any]
