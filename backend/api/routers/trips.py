@@ -4,6 +4,8 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import ValidationError
 
+from ai_travel_assistant.crew import TravelRequest
+from ai_travel_assistant.flight_flow import FlightRequest
 from api.schemas import TripCreate, TripRead
 from api.security import get_current_user
 from api.storage import Storage, User, get_storage
@@ -14,6 +16,7 @@ router = APIRouter(prefix="/trips", tags=["trips"])
 
 @router.get("/test")
 def trips_test(user: User = Depends(get_current_user)) -> dict:
+    """Smoke-test that the trips router requires a valid JWT."""
     return {"message": f"Authenticated as {user.email}"}
 
 
@@ -22,6 +25,7 @@ def list_trips(
     user: User = Depends(get_current_user),
     storage: Storage = Depends(get_storage),
 ) -> list[TripRead]:
+    """Return all trips owned by the authenticated user."""
     return storage.list_trips(user.id)
 
 
@@ -32,11 +36,7 @@ def create_trip(
     user: User = Depends(get_current_user),
     storage: Storage = Depends(get_storage),
 ) -> TripRead:
-    # Reuse the existing domain models (incl. their date-order validators) to
-    # validate the free-form request payload before scheduling work.
-    from ai_travel_assistant.crew import TravelRequest
-    from ai_travel_assistant.flight_flow import FlightRequest
-
+    """Validate the request payload and enqueue a background trip run."""
     model_cls = TravelRequest if body.trip_type == "itinerary" else FlightRequest
     try:
         validated = model_cls(**body.request)

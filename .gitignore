@@ -8,6 +8,7 @@ CLAUDE.md
 knowledge/
 outputs/
 .claude/
+.vscode/
 docs/
 data/
 *.db

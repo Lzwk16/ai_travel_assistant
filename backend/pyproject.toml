@@ -40,4 +40,12 @@ type = "crew"
 [dependency-groups]
 dev = [
     "pre-commit>=4.6.0",
+    "pylint>=4.0.6",
 ]
+
+[tool.pylint.imports]
+known-first-party = ["ai_travel_assistant", "api"]
+
+[tool.pyright]
+extraPaths = ["src"]
+pythonVersion = "3.10"
