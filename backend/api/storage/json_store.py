@@ -14,7 +14,7 @@ import threading
 from datetime import datetime, timezone
 from typing import Any
 
-from ai_travel_assistant.api.storage.base import Trip, User
+from api.storage.base import Trip, User
 
 
 def _now_iso() -> str:
@@ -60,6 +60,7 @@ class JSONFileStorage:
                 "id": self._next_id(rows),
                 "email": email,
                 "hashed_password": hashed_password,
+                "role": "user",
                 "created_at": _now_iso(),
             }
             rows.append(row)
@@ -79,6 +80,22 @@ class JSONFileStorage:
                 if row["id"] == user_id:
                     return self._to_user(row)
         return None
+
+    def list_users(self) -> list[User]:
+        with self._lock:
+            rows = self._read(self._users_path)
+        rows.sort(key=lambda r: r["id"])
+        return [self._to_user(r) for r in rows]
+
+    def set_user_role(self, user_id: int, role: str) -> User:
+        with self._lock:
+            rows = self._read(self._users_path)
+            for row in rows:
+                if row["id"] == user_id:
+                    row["role"] = role
+                    self._write(self._users_path, rows)
+                    return self._to_user(row)
+        raise KeyError(f"User {user_id} not found")
 
     # --- trips ---
     def create_trip(
@@ -133,6 +150,7 @@ class JSONFileStorage:
             id=row["id"],
             email=row["email"],
             hashed_password=row["hashed_password"],
+            role=row.get("role", "user"),
             created_at=_parse_dt(row["created_at"]),
         )
 

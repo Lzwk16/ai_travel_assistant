@@ -8,13 +8,12 @@ secret + constant algorithm) — never hardcoded here.
 from datetime import datetime, timedelta, timezone
 
 import jwt
+from api import settings
+from api.storage import Storage, User, get_storage
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash
 from pwdlib.hashers.bcrypt import BcryptHasher
-
-from ai_travel_assistant.api import settings
-from ai_travel_assistant.api.storage import Storage, User, get_storage
 
 # Only bcrypt is installed (pwdlib[bcrypt]); avoid PasswordHash.recommended(),
 # which would also require argon2-cffi.
@@ -62,3 +61,15 @@ def get_current_user(
         return user
     except (jwt.InvalidTokenError, KeyError, ValueError):
         raise _credentials_exc
+
+
+def require_admin(user: User = Depends(get_current_user)) -> User:
+    """Authorize admin-only endpoints: the authenticated user's ``role`` must be
+    ``"admin"`` (stored per-user in the database). Returns the user so handlers
+    can reuse it; raises 403 otherwise."""
+    if user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"{user.email} is not an admin. Admin privileges required",
+        )
+    return user
