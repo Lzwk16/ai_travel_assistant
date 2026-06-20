@@ -1,4 +1,5 @@
-"""Background trip runner — executes the crewAI itinerary crew or flight flow.
+"""Background trip runner — executes the crewAI itinerary crew, flight flow, or
+hotel flow.
 
 Mirrors the helpers in ``app.py`` (run_itinerary / run_flight_search). The crewAI
 imports are deferred into the runner functions so the API starts fast and auth-only
@@ -17,12 +18,14 @@ from datetime import datetime, timezone
 from api.storage import get_storage
 from ai_travel_assistant.config import (
     FLIGHT_OPTIONS_FILE,
+    HOTEL_OPTIONS_FILE,
     INSIGHTS_FILE,
     ITINERARY_FILE,
     ensure_outputs_dir,
 )
 from ai_travel_assistant.crew import AiTravelAssistant, TravelRequest
 from ai_travel_assistant.flight_flow import FlightRequest, FlightSearchFlow
+from ai_travel_assistant.hotel_flow import HotelRequest, HotelSearchFlow
 
 _kickoff_lock = threading.Lock()
 
@@ -49,11 +52,19 @@ def _run_flights(request: dict) -> dict:
     return {"flights_md": _read_output(FLIGHT_OPTIONS_FILE)}
 
 
+def _run_hotels(request: dict) -> dict:
+    ensure_outputs_dir()
+    HotelSearchFlow().kickoff(inputs=HotelRequest(**request).to_flow_inputs())
+    return {"hotels_md": _read_output(HOTEL_OPTIONS_FILE)}
+
+
 def _execute(trip_type: str, request: dict) -> dict:
     if trip_type == "itinerary":
         return _run_itinerary(request)
     if trip_type == "flights":
         return _run_flights(request)
+    if trip_type == "hotels":
+        return _run_hotels(request)
     raise ValueError(f"Unknown trip_type: {trip_type!r}")
 
 

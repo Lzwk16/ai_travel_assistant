@@ -93,6 +93,12 @@ class GoogleFlightsTool(BaseTool):
     )
     args_schema: type[BaseModel] = FlightSearchInput
 
+    # Number of adult passengers, set per request when the flow builds the tool.
+    # Kept as tool-instance config and OUT of FlightSearchInput on purpose: Groq
+    # coerces integer tool-schema fields to strings, which breaks the agent's
+    # tool-call validation. Defaults to 1 for direct/standalone use.
+    adults: int = 1
+
     # ── public entry point (used directly by the flow) ────────────────────────
 
     def search(
@@ -211,7 +217,7 @@ class GoogleFlightsTool(BaseTool):
                     "type": "2",
                     "currency": currency,
                     "hl": "en",
-                    "adults": 1,
+                    "adults": self.adults,
                     "api_key": api_key,
                 }
             ).get_dict()

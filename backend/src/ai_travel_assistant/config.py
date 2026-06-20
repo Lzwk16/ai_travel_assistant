@@ -10,6 +10,7 @@ GROQ_MODEL = "groq/llama-3.3-70b-versatile"
 
 OUTPUTS_DIR = "outputs"
 FLIGHT_OPTIONS_FILE = f"{OUTPUTS_DIR}/flight_options.md"
+HOTEL_OPTIONS_FILE = f"{OUTPUTS_DIR}/hotel_options.md"
 INSIGHTS_FILE = f"{OUTPUTS_DIR}/recommended_insights.md"
 ITINERARY_FILE = f"{OUTPUTS_DIR}/suggested_itinerary.md"
 

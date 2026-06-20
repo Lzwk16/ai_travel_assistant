@@ -30,10 +30,10 @@ class Token(BaseModel):
 
 
 class TripCreate(BaseModel):
-    trip_type: Literal["itinerary", "flights"]
+    trip_type: Literal["itinerary", "flights", "hotels"]
     request: dict[
         str, Any
-    ]  # validated against TravelRequest/FlightRequest in the router
+    ]  # validated against Travel/Flight/HotelRequest in the router
 
 
 class TripRead(BaseModel):
