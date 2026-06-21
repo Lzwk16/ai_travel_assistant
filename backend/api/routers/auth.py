@@ -3,10 +3,11 @@
 from api.schemas import Token, UserCreate, UserRead
 from api.security import (
     create_access_token,
+    get_current_user,
     hash_password,
     verify_password,
 )
-from api.storage import Storage, get_storage
+from api.storage import Storage, User, get_storage
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -38,3 +39,13 @@ def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return Token(access_token=create_access_token(user.id))
+
+
+@router.get("/me", response_model=UserRead)
+def read_me(user: User = Depends(get_current_user)) -> UserRead:
+    """Return the authenticated user (id, email, role).
+
+    The login token carries only the user id, so the frontend calls this to
+    resolve the current user's identity and role after signing in.
+    """
+    return user
