@@ -33,6 +33,20 @@ class Trip:
     completed_at: datetime | None
 
 
+@dataclass
+class Feedback:
+    """User rating/comment on a completed trip (T1 Stage 0 — the feedback
+    corpus that later feeds agent memory over the §6 read-only seam). One row
+    per trip; re-submitting overwrites the prior rating."""
+
+    id: int
+    trip_id: int
+    user_id: int
+    rating: int  # 1-5
+    comment: str | None
+    created_at: datetime
+
+
 class Storage(Protocol):
     """Persistence operations the API needs. Implementations return the
     backend-independent dataclasses above so response shapes stay identical."""
@@ -49,3 +63,9 @@ class Storage(Protocol):
     def get_trip(self, trip_id: int) -> Trip | None: ...
     def list_trips(self, user_id: int) -> list[Trip]: ...
     def update_trip(self, trip_id: int, **fields: Any) -> Trip: ...
+
+    # Feedback (T1 Stage 0). One row per trip — ``create_feedback`` upserts.
+    def create_feedback(
+        self, trip_id: int, user_id: int, rating: int, comment: str | None
+    ) -> Feedback: ...
+    def get_feedback_for_trip(self, trip_id: int) -> Feedback | None: ...

@@ -18,11 +18,12 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from api.storage.base import Trip, User
+from api.storage.base import Feedback, Trip, User
 from sqlalchemy import (
     JSON,
     DateTime,
     ForeignKey,
+    Integer,
     String,
     create_engine,
     inspect,
@@ -80,6 +81,20 @@ class TripRow(Base):
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+
+
+class FeedbackRow(Base):
+    __tablename__ = "trip_feedback"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # unique: one feedback per trip (create_feedback upserts on this).
+    trip_id: Mapped[int] = mapped_column(
+        ForeignKey("trips.id"), unique=True, index=True
+    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    rating: Mapped[int] = mapped_column(Integer)
+    comment: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
 class SqlAlchemyStorage:
@@ -191,6 +206,36 @@ class SqlAlchemyStorage:
             session.commit()
             return self._to_trip(row)
 
+    # --- feedback (T1 Stage 0) ---
+    def create_feedback(
+        self, trip_id: int, user_id: int, rating: int, comment: str | None
+    ) -> Feedback:
+        with self._Session() as session:
+            row = session.scalar(
+                select(FeedbackRow).where(FeedbackRow.trip_id == trip_id)
+            )
+            if row is None:  # first rating for this trip
+                row = FeedbackRow(
+                    trip_id=trip_id,
+                    user_id=user_id,
+                    rating=rating,
+                    comment=comment,
+                )
+                session.add(row)
+            else:  # re-rating overwrites the prior feedback
+                row.rating = rating
+                row.comment = comment
+                row.created_at = _now()
+            session.commit()
+            return self._to_feedback(row)
+
+    def get_feedback_for_trip(self, trip_id: int) -> Feedback | None:
+        with self._Session() as session:
+            row = session.scalar(
+                select(FeedbackRow).where(FeedbackRow.trip_id == trip_id)
+            )
+            return self._to_feedback(row) if row else None
+
     # --- row -> dataclass mappers ---
     @staticmethod
     def _to_user(row: UserRow) -> User:
@@ -213,4 +258,15 @@ class SqlAlchemyStorage:
             result=row.result,
             created_at=_as_utc(row.created_at),
             completed_at=_as_utc(row.completed_at),
+        )
+
+    @staticmethod
+    def _to_feedback(row: FeedbackRow) -> Feedback:
+        return Feedback(
+            id=row.id,
+            trip_id=row.trip_id,
+            user_id=row.user_id,
+            rating=row.rating,
+            comment=row.comment,
+            created_at=_as_utc(row.created_at),
         )
