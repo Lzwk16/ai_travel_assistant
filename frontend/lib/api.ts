@@ -4,6 +4,8 @@
 import { API_BASE } from "./env";
 import { clearToken, getToken, saveToken } from "./auth";
 import type {
+  FeedbackCreate,
+  FeedbackRead,
   Token,
   TripCreate,
   TripRead,
@@ -83,6 +85,24 @@ export function createTrip(body: TripCreate): Promise<TripRead> {
 
 export function tripsAuthCheck(): Promise<{ message: string }> {
   return request<{ message: string }>("/trips/test");
+}
+
+// ---- feedback (T1 Stage 0) ----
+// PUT (idempotent upsert): re-rating a trip overwrites the prior feedback.
+export function submitFeedback(
+  tripId: number,
+  body: FeedbackCreate,
+): Promise<FeedbackRead> {
+  return request<FeedbackRead>(`/trips/${tripId}/feedback`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+// Current user's feedback for a trip; rejects with ApiError(404) if none yet.
+export function getFeedback(tripId: number): Promise<FeedbackRead> {
+  return request<FeedbackRead>(`/trips/${tripId}/feedback`);
 }
 
 // ---- admin ----

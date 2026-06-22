@@ -217,3 +217,22 @@ button.secondary {
   padding: 0.1rem 0.3rem;
   border-radius: 4px;
 }
+
+/* ── feedback (T1 Stage 0) ────────────────────────────────────────────── */
+.stars {
+  display: flex;
+  gap: 0.2rem;
+  margin: 0.25rem 0 0.75rem;
+}
+.stars .star {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--border);
+}
+.stars .star.on {
+  color: var(--warn);
+}

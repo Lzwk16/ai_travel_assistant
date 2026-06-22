@@ -25,6 +25,21 @@ export interface Token {
   token_type: string; // "bearer"
 }
 
+// ---- feedback (T1 Stage 0) ----
+export interface FeedbackCreate {
+  rating: number; // 1-5
+  comment?: string | null;
+}
+
+export interface FeedbackRead {
+  id: number;
+  trip_id: number;
+  user_id: number;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+}
+
 // ---- per-trip-type request payloads (the `request` field of TripCreate) ----
 export interface ItineraryRequest {
   origin: string;

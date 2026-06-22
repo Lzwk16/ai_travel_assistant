@@ -3,6 +3,7 @@ import { useTrips } from "../hooks/useTrips";
 import { formatError } from "../format";
 import TripResult from "../components/TripResult";
 import RequestSummary from "../components/RequestSummary";
+import FeedbackForm from "../components/FeedbackForm";
 
 const TYPE_LABEL: Record<string, string> = {
   itinerary: "Itinerary",
@@ -50,6 +51,8 @@ export default function TripDetailPage() {
       ) : (
         <TripResult trip={trip} />
       )}
+
+      {trip.status === "completed" && <FeedbackForm tripId={trip.id} />}
     </div>
   );
 }

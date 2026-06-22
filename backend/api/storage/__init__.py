@@ -8,9 +8,9 @@ whose lock must be shared across all requests and background threads).
 from functools import lru_cache
 
 from api import settings
-from api.storage.base import Storage, Trip, User
+from api.storage.base import Feedback, Storage, Trip, User
 
-__all__ = ["get_storage", "Storage", "User", "Trip"]
+__all__ = ["get_storage", "Storage", "User", "Trip", "Feedback"]
 
 
 @lru_cache

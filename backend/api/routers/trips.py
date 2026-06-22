@@ -9,7 +9,7 @@ from pydantic import ValidationError
 from ai_travel_assistant.crew import TravelRequest
 from ai_travel_assistant.flight_flow import FlightRequest
 from ai_travel_assistant.hotel_flow import HotelRequest
-from api.schemas import TripCreate, TripRead
+from api.schemas import FeedbackCreate, FeedbackRead, TripCreate, TripRead
 from api.security import get_current_user
 from api.storage import Storage, User, get_storage
 from api.tasks import run_trip
@@ -126,3 +126,56 @@ def create_trip(
     )
     background_tasks.add_task(run_trip, trip.id)
     return trip
+
+
+def _owned_trip(trip_id: int, user: User, storage: Storage):
+    """Fetch a trip the caller owns, or 404. A 404 (not 403) on a foreign trip
+    avoids leaking that someone else's trip id exists."""
+    trip = storage.get_trip(trip_id)
+    if trip is None or trip.user_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found"
+        )
+    return trip
+
+
+@router.put("/{trip_id}/feedback", response_model=FeedbackRead)
+def submit_feedback(
+    trip_id: int,
+    body: FeedbackCreate,
+    user: User = Depends(get_current_user),
+    storage: Storage = Depends(get_storage),
+) -> FeedbackRead:
+    """Rate a completed trip (T1 Stage 0). Upserts — re-rating overwrites.
+
+    Idempotent by trip, so PUT: feedback can only be given on a `completed`
+    trip; other states return 409.
+    """
+    trip = _owned_trip(trip_id, user, storage)
+    if trip.status != "completed":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Feedback can only be submitted for a completed trip.",
+        )
+    return storage.create_feedback(
+        trip_id=trip_id,
+        user_id=user.id,
+        rating=body.rating,
+        comment=body.comment,
+    )
+
+
+@router.get("/{trip_id}/feedback", response_model=FeedbackRead)
+def get_feedback(
+    trip_id: int,
+    user: User = Depends(get_current_user),
+    storage: Storage = Depends(get_storage),
+) -> FeedbackRead:
+    """Return the caller's feedback for a trip, or 404 if none yet."""
+    _owned_trip(trip_id, user, storage)
+    feedback = storage.get_feedback_for_trip(trip_id)
+    if feedback is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="No feedback yet."
+        )
+    return feedback
