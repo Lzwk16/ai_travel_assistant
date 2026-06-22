@@ -1,36 +1,49 @@
 # AI Travel Assistant
 
-A multi-agent AI travel planning system that researches destinations, gathers local insights, and finds real flights, all from a simple Streamlit interface.
+A multi-agent AI travel planning system that researches destinations, gathers local insights, finds real flights, and searches real hotels — usable as a Streamlit app **or** via a FastAPI backend with a React web frontend.
 
 ## Overview
 
-AI Travel Assistant automates travel research and planning through two
+AI Travel Assistant automates travel research and planning through three
 independent modes. **Plan itinerary** runs three specialised AI agents in
 sequence to analyse destinations, surface local insights, and produce a detailed
 day-by-day schedule. **Find flights** uses a dedicated agent backed by real
 Google Flights data to search multiple airports per city, filter poor timing connections, and rank options by a balanced score of price, journey time, and
-stops.
+stops. **Find hotels** searches real per-city hotel options via Google Hotels
+(SerpAPI), returning structured results (name, price, rating, stars).
+
+The system ships two ways to use it: the original **Streamlit app** (`backend/app.py`)
+and a decoupled **FastAPI HTTP API** (`backend/api/`) consumed by a **React + TypeScript
+web SPA** (`frontend/`). See the [Backend API](#backend-api) section below; the web
+frontend is documented separately in [`frontend/README.md`](frontend/README.md).
 
 ## Architecture
 
 ```
 ai_travel_assistant/
-├── app.py                           # Streamlit UI with mode selector, forms, result display
-├── src/ai_travel_assistant/
-│   ├── config.py                    # Shared constants: Groq model id, output file paths
-│   ├── crew.py                      # TravelRequest model + AiTravelAssistant crew (3 agents)
-│   ├── flight_flow.py               # FlightRequest model + FlightSearchFlow + inline flight agent
-│   ├── flight_results.py            # Parses flight agent markdown output into DataFrames
-│   ├── main.py                      # CLI entry points (run, train, test, replay)
-│   ├── tools/
-│   │   └── google_flights.py        # GoogleFlightsTool for SerpAPI Google Flights integration
-│   └── config/
-│       ├── agents.yaml              # Role, goal, backstory for the 3 itinerary crew agents
-│       └── tasks.yaml               # Task descriptions and expected outputs
-└── outputs/
-    ├── recommended_insights.md      # Local Guide output
-    ├── suggested_itinerary.md       # Itinerary Writer output
-    └── flight_options.md            # FlightSearchFlow output
+├── backend/                         # crewAI engine + Streamlit app + FastAPI API
+│   ├── app.py                       # Streamlit UI (mode selector, forms, result display)
+│   ├── api/                         # FastAPI HTTP layer (auth, trips, users, feedback)
+│   │   ├── travel_api.py            # App factory: CORS, routers, storage init
+│   │   ├── routers/                 # auth.py, trips.py, users.py
+│   │   ├── storage/                 # Storage protocol + json_store / sql_store backends
+│   │   ├── schemas.py               # Pydantic request/response DTOs
+│   │   ├── security.py              # password hashing + JWT issue/verify
+│   │   └── settings.py              # env-driven config (JWT, CORS, storage)
+│   └── src/ai_travel_assistant/
+│       ├── config.py                # Shared constants: Groq model id, output file paths
+│       ├── crew.py                  # TravelRequest model + AiTravelAssistant crew (3 agents)
+│       ├── flight_flow.py           # FlightRequest model + FlightSearchFlow + inline flight agent
+│       ├── hotel_flow.py            # HotelRequest model + HotelSearchFlow
+│       ├── flight_results.py        # Parses flight agent markdown output into DataFrames
+│       ├── main.py                  # CLI entry points (run, train, test, replay)
+│       ├── tools/
+│       │   ├── google_flights.py    # GoogleFlightsTool (SerpAPI Google Flights)
+│       │   └── google_hotels.py     # GoogleHotelsTool (SerpAPI Google Hotels)
+│       └── config/
+│           ├── agents.yaml          # Role, goal, backstory for the 3 itinerary crew agents
+│           └── tasks.yaml           # Task descriptions and expected outputs
+└── frontend/                        # React + TypeScript web SPA — documented in frontend/README.md
 ```
 
 ### Mode 1 — Plan itinerary (`AiTravelAssistant` crew)
@@ -155,7 +168,8 @@ Create a `.env` file in the project root:
 |---|---|---|
 | `GROQ_API_KEY` | Yes | LLM provider — [console.groq.com](https://console.groq.com) (free tier available) |
 | `SERPER_API_KEY` | Yes | Web search for itinerary crew agents — [serper.dev](https://serper.dev) (free: 2,500 searches) |
-| `SERP_API_KEY` | Yes | Google Flights data for flight search agent — [serpapi.com](https://serpapi.com) (free: 250 searches/month) |
+| `SERP_API_KEY` | Yes | Google Flights/Hotels data for the flight & hotel agents — [serpapi.com](https://serpapi.com) (free: 250 searches/month) |
+| `JWT_SECRET_KEY` | API only | Signing key for auth tokens — the API refuses to start without it. Generate: `python -c "import secrets; print(secrets.token_hex(32))"` |
 
 ## Usage
 
@@ -218,9 +232,48 @@ Add the corresponding API key to `.env`.
 | `flight_flow.py` | Flight agent role/goal/backstory, prompt, and LLM settings |
 | `tools/google_flights.py` | SerpAPI parameters, response parsing, and output formatting |
 
+## Backend API
+
+A FastAPI HTTP layer (`backend/api/`) wraps the crew/flows so the modes can be
+driven over HTTP with user accounts. Trips run **asynchronously** — `POST /trips`
+returns `202` with `status: pending`, and the run is executed in a background
+task; clients **poll `GET /trips`** until a trip reaches `completed`/`failed`,
+then read the markdown in `result`.
+
+**Run the API**
+
+```bash
+cd backend
+uv sync
+uv run uvicorn api.travel_api:app --reload --port 8000
+```
+
+Requires `JWT_SECRET_KEY` (and the LLM/search keys above) in `.env`. Interactive
+docs at `http://localhost:8000/docs`.
+
+**Endpoints**
+
+| Method & path | Auth | Purpose |
+|---|---|---|
+| `POST /auth/register` | none | create an account → `UserRead` (201) |
+| `POST /auth/login` | none | form-encoded (`username`=email) → JWT `Token` |
+| `GET /auth/me` | bearer | current user `{id, email, role}` |
+| `GET /trips` | bearer | the caller's trips, newest-first |
+| `POST /trips` | bearer | create a trip `{trip_type, request}` → `202` `TripRead` (`pending`) |
+| `GET /trips/test` | bearer | auth smoke-test |
+| `PUT /trips/{id}/feedback` | bearer | rate a **completed** trip `{rating 1-5, comment?}` → `FeedbackRead` (upsert) |
+| `GET /trips/{id}/feedback` | bearer | the caller's feedback for a trip (404 if none) |
+| `GET /users` | bearer **admin** | list users (role-gated) |
+
+`trip_type` is `itinerary` \| `flights` \| `hotels`, each with its own `request`
+shape (origin/destinations/dates, plus per-type fields like `adults`/`children`).
+
 ## Future work
 
-1. API & Front-end development for more user friendly interface
-2. Include advanced reasoning, planning, collaboration, and state memory into
-   agents for more complex and detailed itinerary planning
-3. Infrastructure & deployment: Docker containerisation, observability, and evaluation
+1. **API & web frontend** — _largely delivered_: FastAPI backend (`backend/api/`)
+   with auth/trips/users and a React SPA (`frontend/`). Remaining: admin screen,
+   OpenAPI-generated client.
+2. **Agent reasoning, planning & state memory** — _in progress_: advanced
+   reasoning, planning, collaboration, and persistent memory for richer itineraries.
+3. **Infrastructure & deployment** — Docker containerisation, observability, and
+   evaluation.
