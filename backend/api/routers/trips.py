@@ -16,17 +16,14 @@ from api.tasks import run_trip
 
 router = APIRouter(prefix="/trips", tags=["trips"])
 
-# trip_type -> the domain model that validates its free-form request payload.
+# example of request models and input trips for the API
 _REQUEST_MODELS = {
     "itinerary": TravelRequest,
     "flights": FlightRequest,
     "hotels": HotelRequest,
 }
 
-# `request` is a free-form dict (one of three shapes by trip_type), so OpenAPI
-# can't infer per-type fields. These labelled examples render as a dropdown in
-# Swagger ("Try it out") and document each shape — including the configurable
-# guest counts — without changing the contract.
+
 _TRIP_EXAMPLES = {
     "itinerary": {
         "summary": "Itinerary — multi-agent day-by-day plan",
@@ -100,7 +97,7 @@ def create_trip(
 ) -> TripRead:
     """Create a trip and run it in the background.
 
-    The `request` body varies by `trip_type` — see the example dropdown:
+    The `request` body varies by `trip_type`, see the example dropdown:
     - **itinerary** → `TravelRequest` (origin, destinations, dates, group_size,
       budget_type, interests, travel_style, currency).
     - **flights** → `FlightRequest` (origin, destinations, dates, currency,
@@ -146,7 +143,7 @@ def submit_feedback(
     user: User = Depends(get_current_user),
     storage: Storage = Depends(get_storage),
 ) -> FeedbackRead:
-    """Rate a completed trip (T1 Stage 0). Upserts — re-rating overwrites.
+    """Rate a completed trip. Upserts re-rating overwrites.
 
     Idempotent by trip, so PUT: feedback can only be given on a `completed`
     trip; other states return 409.

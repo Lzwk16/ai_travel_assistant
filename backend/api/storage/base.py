@@ -35,8 +35,7 @@ class Trip:
 
 @dataclass
 class Feedback:
-    """User rating/comment on a completed trip (T1 Stage 0 — the feedback
-    corpus that later feeds agent memory over the §6 read-only seam). One row
+    """User rating/comment on a completed trip. One row
     per trip; re-submitting overwrites the prior rating."""
 
     id: int
@@ -64,7 +63,7 @@ class Storage(Protocol):
     def list_trips(self, user_id: int) -> list[Trip]: ...
     def update_trip(self, trip_id: int, **fields: Any) -> Trip: ...
 
-    # Feedback (T1 Stage 0). One row per trip — ``create_feedback`` upserts.
+    # Feedback for a completed trip. One row per trip — ``create_feedback`` upserts.
     def create_feedback(
         self, trip_id: int, user_id: int, rating: int, comment: str | None
     ) -> Feedback: ...

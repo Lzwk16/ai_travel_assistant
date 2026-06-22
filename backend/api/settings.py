@@ -19,7 +19,7 @@ if not JWT_SECRET_KEY:
         '`python -c "import secrets; print(secrets.token_hex(32))"` and add it to .env.'
     )
 
-JWT_ALGORITHM = "HS256"  # not a secret — a public, standard algorithm name
+JWT_ALGORITHM = "HS256"  # a public, standard algorithm name
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
 # --- CORS ---
@@ -31,6 +31,6 @@ CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "false").lower() ==
 # --- Storage ---
 # "json" -> JSON files (Phase 1 MVP);
 # "sql" -> SQLAlchemy (Phase 2 SQLite/Phase 3 Postgres)
-STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "json")
+# STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "json")
 JSON_DATA_DIR = os.getenv("JSON_DATA_DIR", "data")
 DATABASE_URL = os.getenv("DATABASE_URL", "")  # required when STORAGE_BACKEND == "sql"

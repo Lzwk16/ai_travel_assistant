@@ -25,7 +25,7 @@ export interface Token {
   token_type: string; // "bearer"
 }
 
-// ---- feedback (T1 Stage 0) ----
+// ---- feedback for a completed trip ----
 export interface FeedbackCreate {
   rating: number; // 1-5
   comment?: string | null;

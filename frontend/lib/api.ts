@@ -87,8 +87,8 @@ export function tripsAuthCheck(): Promise<{ message: string }> {
   return request<{ message: string }>("/trips/test");
 }
 
-// ---- feedback (T1 Stage 0) ----
-// PUT (idempotent upsert): re-rating a trip overwrites the prior feedback.
+// ---- feedback for a completed trip ----
+// PUT (idempotent upsert): re-submitting a trip overwrites the prior feedback.
 export function submitFeedback(
   tripId: number,
   body: FeedbackCreate,

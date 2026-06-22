@@ -6,7 +6,7 @@ import type { FeedbackRead } from "../../lib/types";
 
 const STARS = [1, 2, 3, 4, 5];
 
-// Rate a completed trip (T1 Stage 0). The rating becomes part of the feedback
+// Rate a completed trip for feedback. The rating becomes part of the feedback
 // corpus that later seeds agent memory (agent-state roadmap §9 / §6 seam).
 export default function FeedbackForm({ tripId }: { tripId: number }) {
   const queryClient = useQueryClient();

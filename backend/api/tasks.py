@@ -84,7 +84,7 @@ def run_trip(trip_id: int) -> None:
             result=result,
             completed_at=datetime.now(timezone.utc),
         )
-    except Exception as exc:  # noqa: BLE001 — any failure marks the trip failed
+    except Exception as exc:
         storage.update_trip(
             trip_id,
             status="failed",

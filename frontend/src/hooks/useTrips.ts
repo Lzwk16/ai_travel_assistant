@@ -5,7 +5,7 @@ import type { TripRead } from "../../lib/types";
 const TERMINAL = new Set(["completed", "failed"]);
 
 // Trips list with the async polling lifecycle: keep refetching every 3s while
-// any trip is still pending/running, then stop once all are terminal (§5).
+// any trip is still pending/running, then stop once all are terminal.
 export function useTrips() {
   return useQuery<TripRead[]>({
     queryKey: ["trips"],

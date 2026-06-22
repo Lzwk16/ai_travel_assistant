@@ -31,12 +31,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import (
-    DeclarativeBase,
-    Mapped,
-    mapped_column,
-    sessionmaker,
-)
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 # Plain JSON on SQLite; JSONB on PostgreSQL (Phase 3) — chosen per-dialect.
 _JSONType = JSON().with_variant(JSONB, "postgresql")
@@ -122,7 +117,7 @@ class SqlAlchemyStorage:
         """Idempotent stopgap migration for databases created before a column
         existed (e.g. ``users.role``). ``create_all`` only creates missing
         tables, never alters existing ones. Real migrations arrive with Alembic
-        in the deployment track (item #3)."""
+        during deployment."""
         inspector = inspect(self._engine)
         user_columns = {c["name"] for c in inspector.get_columns("users")}
         if "role" not in user_columns:
@@ -206,7 +201,7 @@ class SqlAlchemyStorage:
             session.commit()
             return self._to_trip(row)
 
-    # --- feedback (T1 Stage 0) ---
+    # --- feedback for a completed trip ---
     def create_feedback(
         self, trip_id: int, user_id: int, rating: int, comment: str | None
     ) -> Feedback:
@@ -214,7 +209,7 @@ class SqlAlchemyStorage:
             row = session.scalar(
                 select(FeedbackRow).where(FeedbackRow.trip_id == trip_id)
             )
-            if row is None:  # first rating for this trip
+            if row is None:  # first feedback for this trip
                 row = FeedbackRow(
                     trip_id=trip_id,
                     user_id=user_id,
@@ -222,7 +217,7 @@ class SqlAlchemyStorage:
                     comment=comment,
                 )
                 session.add(row)
-            else:  # re-rating overwrites the prior feedback
+            else:  # re-submitting overwrites the prior feedback
                 row.rating = rating
                 row.comment = comment
                 row.created_at = _now()
