@@ -231,6 +231,17 @@ class SqlAlchemyStorage:
             )
             return self._to_feedback(row) if row else None
 
+    def list_feedback(self, user_id: int) -> list[Feedback]:
+        """All of a user's feedback, newest-first — the read path the
+        distillation step consumes to build per-user preferences."""
+        with self._Session() as session:
+            rows = session.scalars(
+                select(FeedbackRow)
+                .where(FeedbackRow.user_id == user_id)
+                .order_by(FeedbackRow.created_at.desc(), FeedbackRow.id.desc())
+            ).all()
+            return [self._to_feedback(r) for r in rows]
+
     # --- row -> dataclass mappers ---
     @staticmethod
     def _to_user(row: UserRow) -> User:
